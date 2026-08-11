@@ -1,26 +1,325 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================================================
+   DESIGN SYSTEM — brand tokens, typography scale, radius & shadow scales.
+   Single source of truth: design-system/MASTER.md documents every value
+   below in human-readable form (with rationale). Change values here only.
+   ========================================================================= */
 
 @theme inline {
+  /* ---- Fonts ---- */
+  --font-sans: var(--font-body); /* Plus Jakarta Sans — body/UI default */
+  --font-heading: var(--font-heading); /* Cormorant Garamond — display/headings */
+
+  /* ---- Typography scale ----
+     Each entry pairs size + line-height + letter-spacing + weight.
+     Display/H1-H4 are meant to be used together with the `font-heading`
+     utility; Body/Small/Caption/Button/Label already inherit the body
+     font from `html { @apply font-sans }` below. */
+  --text-display-xl: 4.5rem; /* 72px */
+  --text-display-xl--line-height: 1.05;
+  --text-display-xl--letter-spacing: -0.02em;
+  --text-display-xl--font-weight: 500;
+
+  --text-display: 3.5rem; /* 56px */
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 500;
+
+  --text-h1: 2.75rem; /* 44px */
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h1--font-weight: 600;
+
+  --text-h2: 2.125rem; /* 34px */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 600;
+
+  --text-h3: 1.625rem; /* 26px */
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.005em;
+  --text-h3--font-weight: 600;
+
+  --text-h4: 1.3125rem; /* 21px */
+  --text-h4--line-height: 1.35;
+  --text-h4--letter-spacing: 0em;
+  --text-h4--font-weight: 600;
+
+  --text-body-lg: 1.1875rem; /* 19px */
+  --text-body-lg--line-height: 1.6;
+  --text-body-lg--letter-spacing: 0em;
+  --text-body-lg--font-weight: 400;
+
+  --text-body: 1rem; /* 16px */
+  --text-body--line-height: 1.6;
+  --text-body--letter-spacing: 0em;
+  --text-body--font-weight: 400;
+
+  --text-small: 0.875rem; /* 14px */
+  --text-small--line-height: 1.5;
+  --text-small--letter-spacing: 0em;
+  --text-small--font-weight: 400;
+
+  --text-caption: 0.8125rem; /* 13px */
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.01em;
+  --text-caption--font-weight: 500;
+
+  --text-button: 0.9375rem; /* 15px */
+  --text-button--line-height: 1;
+  --text-button--letter-spacing: 0.01em;
+  --text-button--font-weight: 600;
+
+  --text-label: 0.75rem; /* 12px */
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.06em;
+  --text-label--font-weight: 600;
+
+  /* ---- Radius scale (soft, premium) ---- */
+  --radius-xs: 0.25rem; /* 4px */
+  --radius-sm: 0.5rem; /* 8px */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-xl: 1.5rem; /* 24px */
+  --radius-full: 9999px;
+
+  /* ---- Shadow scale (subtle, tinted with the heading color for warmth) ---- */
+  --shadow-sm: 0 1px 2px 0 rgb(from var(--brand-heading) r g b / 4%);
+  --shadow-md: 0 4px 12px -2px rgb(from var(--brand-heading) r g b / 6%),
+    0 2px 4px -2px rgb(from var(--brand-heading) r g b / 4%);
+  --shadow-lg: 0 12px 24px -4px rgb(from var(--brand-heading) r g b / 8%),
+    0 4px 8px -4px rgb(from var(--brand-heading) r g b / 4%);
+  --shadow-xl: 0 24px 48px -8px rgb(from var(--brand-heading) r g b / 10%),
+    0 8px 16px -8px rgb(from var(--brand-heading) r g b / 6%);
+
+  /* ---- Color tokens (see :root below for the underlying values) ---- */
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@media (prefers-color-scheme: dark) {
+:root {
+  /* ---- Brand colors — the ONLY hex values in this file.
+     Every other color token below is derived from these six via
+     opacity/color-mix, per the brand guideline of not inventing new
+     brand colors. `--brand-destructive` is the one deliberate exception:
+     error states need a universally-recognized red that none of the six
+     brand colors provide (see design-system/MASTER.md for rationale). ---- */
+  --brand-background: #faf9f6;
+  --brand-surface: #ffffff;
+  --brand-primary: #0e6b72;
+  --brand-secondary: #14493c;
+  --brand-heading: #0e2429;
+  --brand-accent: #d5b378;
+  --brand-destructive: #b2452f;
+
+  /* ---- Semantic tokens ---- */
+  --background: var(--brand-background);
+  --surface: var(--brand-surface);
+  --heading: var(--brand-heading);
+  --foreground: rgb(from var(--brand-heading) r g b / 88%);
+  --text: rgb(from var(--brand-heading) r g b / 78%);
+  --muted: rgb(from var(--brand-heading) r g b / 6%);
+  --muted-foreground: rgb(from var(--brand-heading) r g b / 55%);
+  --border: rgb(from var(--brand-heading) r g b / 12%);
+  --input: rgb(from var(--brand-heading) r g b / 16%);
+  --ring: rgb(from var(--brand-primary) r g b / 45%);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-surface);
+  --secondary: var(--brand-secondary);
+  --secondary-foreground: var(--brand-surface);
+  --accent: var(--brand-accent);
+  --accent-foreground: var(--brand-heading);
+
+  /* success/warning reuse the brand secondary green and accent gold —
+     no new hues introduced, only new semantic meaning. */
+  --success: var(--brand-secondary);
+  --success-foreground: var(--brand-surface);
+  --warning: var(--brand-accent);
+  --warning-foreground: var(--brand-heading);
+  --destructive: var(--brand-destructive);
+  --destructive-foreground: var(--brand-surface);
+
+  --card: var(--brand-surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--brand-surface);
+  --popover-foreground: var(--foreground);
+
+  --chart-1: var(--brand-primary);
+  --chart-2: var(--brand-accent);
+  --chart-3: var(--brand-secondary);
+  --chart-4: rgb(from var(--brand-primary) r g b / 55%);
+  --chart-5: var(--brand-heading);
+
+  --sidebar: var(--brand-surface);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: var(--brand-surface);
+  --sidebar-accent: var(--brand-accent);
+  --sidebar-accent-foreground: var(--brand-heading);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* ---- Layout tokens (desktop-first; see media queries below) ----
+     Consume via Tailwind's arbitrary-value var syntax, e.g.
+     className="px-(--space-page-x) py-(--space-section-y)" */
+  --container-max-width: 80rem; /* 1280px */
+  --content-max-width: 45rem; /* 720px — readable long-form measure */
+  --space-page-x: 6rem; /* 96px */
+  --space-section-y: 8rem; /* 128px */
+  --space-grid-gap: 1.5rem; /* 24px */
+  --space-card-padding: 2rem; /* 32px */
+  --space-button-padding-x: 1.5rem; /* 24px */
+  --space-button-padding-y: 0.75rem; /* 12px */
+}
+
+/* Tablet: ≤1024px */
+@media (max-width: 64rem) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --space-page-x: 3rem; /* 48px */
+    --space-section-y: 6rem; /* 96px */
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Mobile: ≤640px */
+@media (max-width: 40rem) {
+  :root {
+    --space-page-x: 1.5rem; /* 24px */
+    --space-section-y: 4rem; /* 64px */
+    --space-grid-gap: 1rem; /* 16px */
+    --space-card-padding: 1.5rem; /* 24px */
+  }
+}
+
+/* Dark theme is intentionally out of scope for now — nothing in the app
+   applies the `.dark` class yet. Left as shadcn's neutral default so it
+   stays harmless rather than half-implemented; revisit if/when a theme
+   toggle is actually built. */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading text-heading;
+  }
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    vertical-align: middle;
+  }
+  img {
+    /* italic, muted alt text if the image fails to load, instead of the
+       default browser broken-image styling */
+    font-style: italic;
+    color: var(--muted-foreground);
+  }
+  ::selection {
+    background: rgb(from var(--brand-accent) r g b / 35%);
+    color: var(--brand-heading);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
