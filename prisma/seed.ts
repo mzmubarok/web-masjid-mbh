@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/prisma";
+
 import { seedRoles } from "./seeds/role.seed";
+import { seedAdmin } from "./seeds/admin.seed";
 
 async function main() {
   console.log("🌱 Starting database seed...");
 
   await seedRoles(prisma);
+  await seedAdmin(prisma);
 
   console.log("✅ Database seed completed.");
 }
