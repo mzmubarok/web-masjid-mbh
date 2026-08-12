@@ -11,6 +11,7 @@ export {
   Financial,
   type FinancialProps,
   type FinancialSummaryItem,
+  type FinancialFund,
 } from "@/components/sections/Financial";
 export { Infaq, type InfaqProps, type TrustIndicator } from "@/components/sections/Infaq";
 export { Gallery, type GalleryProps, type GalleryItem } from "@/components/sections/Gallery";

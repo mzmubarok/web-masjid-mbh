@@ -59,7 +59,11 @@ export interface HeroProps {
  */
 export function Hero({
   tagline = "Mengaji • Mengabdi • Menghidupi",
-  mosqueName = "Masjid Baitul Hikmah Gondolayu Lor",
+  // Embedded newline is deliberate — paired with `whitespace-pre-line`
+  // below, it forces the break between the mosque name and its location
+  // at this exact point, rather than leaving it to the browser's natural
+  // (width-dependent, unpredictable) wrapping.
+  mosqueName = "Masjid Baitul Hikmah\nGondolayu Lor",
   imageSrc = "/images/hero/hero-masjid.webp",
   imageAlt = "Tampak bangunan Masjid Baitul Hikmah Gondolayu Lor",
   hijriDate = "12 Ramadan 1447 H",
@@ -132,7 +136,7 @@ export function Hero({
             className="relative z-0 w-full max-w-2xl rounded-2xl border border-surface/20 bg-heading/30 p-5 text-left shadow-2xl backdrop-blur-lg sm:p-6"
           >
             <p className="text-label text-accent">{tagline}</p>
-            <h1 className="mt-3 text-h1 font-heading text-surface">{mosqueName}</h1>
+            <h1 className="mt-3 whitespace-pre-line text-h1 font-heading text-surface">{mosqueName}</h1>
           </motion.div>
 
           {/* Deliberately layered on top (z-10) of the glass panel's bottom

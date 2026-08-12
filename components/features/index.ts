@@ -17,8 +17,14 @@ export {
 export {
   FinancialSummaryCard,
   type FinancialSummaryCardProps,
+  type FinancialSummaryCardTone,
+  type FinancialSummaryFigure,
 } from "@/components/features/finance/FinancialSummaryCard";
-export { FinancialStat, type FinancialStatProps } from "@/components/features/finance/FinancialStat";
+export {
+  FinancialStat,
+  type FinancialStatProps,
+  type FinancialStatEmphasis,
+} from "@/components/features/finance/FinancialStat";
 
 export { EventCard, type EventCardProps } from "@/components/features/events/EventCard";
 export { EventBadge, type EventBadgeProps, type EventStatus } from "@/components/features/events/EventBadge";

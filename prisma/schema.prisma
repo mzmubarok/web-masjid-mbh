@@ -9,3 +9,520 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model Admin {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+}
+
+model User {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+  roleId       String
+  role         Role   @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media                   Media[]
+  auditLogs               AuditLog[]
+  heroesCreated           Hero[]            @relation("HeroCreatedBy")
+  heroesUpdated           Hero[]            @relation("HeroUpdatedBy")
+  aboutsCreated           About[]           @relation("AboutCreatedBy")
+  aboutsUpdated           About[]           @relation("AboutUpdatedBy")
+  eventsCreated           Event[]           @relation("EventCreatedBy")
+  eventsUpdated           Event[]           @relation("EventUpdatedBy")
+  galleryAlbumsCreated    GalleryAlbum[]    @relation("GalleryAlbumCreatedBy")
+  galleryAlbumsUpdated    GalleryAlbum[]    @relation("GalleryAlbumUpdatedBy")
+  hijriOverridesCreated   HijriOverride[]
+  financialReportsCreated FinancialReport[] @relation("FinancialReportCreatedBy")
+  financialReportsUpdated FinancialReport[] @relation("FinancialReportUpdatedBy")
+  donationProgramsCreated DonationProgram[] @relation("DonationProgramCreatedBy")
+  donationProgramsUpdated DonationProgram[] @relation("DonationProgramUpdatedBy")
+
+  @@index([roleId])
+}
+
+model Media {
+  id             String  @id @default(cuid())
+  fileName       String
+  storedFileName String  @unique
+  extension      String
+  mimeType       String
+  fileSize       Int
+  width          Int?
+  height         Int?
+  altText        String?
+  title          String?
+  description    String?
+  folder         String?
+  storagePath    String
+  checksum       String  @unique
+  uploadedById   String
+  uploadedBy     User    @relation(fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  siteLogoFor             SiteSetting[]      @relation("SiteSettingLogo")
+  siteLogoDarkFor         SiteSetting[]      @relation("SiteSettingLogoDark")
+  siteFaviconFor          SiteSetting[]      @relation("SiteSettingFavicon")
+  siteSeoImageFor         SiteSetting[]      @relation("SiteSettingSeoImage")
+  siteQrisImageFor        SiteSetting[]      @relation("SiteSettingQrisImage")
+  socialMediaIconFor      SocialMedia[]
+  heroBackgroundFor       Hero[]
+  taglineIconFor          Tagline[]
+  eventFeaturedImageFor   Event[]
+  eventCategoryIconFor    EventCategory[]
+  galleryAlbumCoverFor    GalleryAlbum[]
+  galleryPhotoFor         GalleryPhoto[]
+  financialProgramIconFor FinancialProgram[]
+  donationProgramCoverFor DonationProgram[]
+
+  @@index([uploadedById])
+  @@index([mimeType])
+  @@index([createdAt])
+  @@index([folder])
+}
+
+// Singleton — exactly one row should ever exist; enforced at the
+// application layer (Prisma has no schema-level singleton constraint).
+model SiteSetting {
+  id String @id @default(cuid())
+
+  // General
+  siteName        String
+  siteTagline     String?
+  siteDescription String?
+  language        String
+  timezone        String
+
+  // Branding
+  logoId            String?
+  logo              Media?  @relation("SiteSettingLogo", fields: [logoId], references: [id])
+  logoDarkId        String?
+  logoDark          Media?  @relation("SiteSettingLogoDark", fields: [logoDarkId], references: [id])
+  faviconId         String?
+  favicon           Media?  @relation("SiteSettingFavicon", fields: [faviconId], references: [id])
+  defaultSeoImageId String?
+  defaultSeoImage   Media?  @relation("SiteSettingSeoImage", fields: [defaultSeoImageId], references: [id])
+
+  // SEO
+  metaTitle       String
+  metaDescription String
+  metaKeywords    String?
+  canonicalUrl    String?
+
+  // Social Preview
+  ogTitle       String?
+  ogDescription String?
+  twitterCard   String?
+
+  // Website Status
+  maintenanceMode    Boolean @default(false)
+  maintenanceMessage String?
+
+  // Footer
+  copyrightText     String
+  footerDescription String?
+
+  // Donation / Banking
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  qrisImageId       String?
+  qrisImage         Media?  @relation("SiteSettingQrisImage", fields: [qrisImageId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Singleton — exactly one row should ever exist; enforced at the
+// application layer (Prisma has no schema-level singleton constraint).
+model ContactLocation {
+  id String @id @default(cuid())
+
+  // Basic Information
+  mosqueName       String
+  shortDescription String?
+  address          String
+  district         String?
+  city             String
+  province         String
+  postalCode       String?
+
+  // Coordinates
+  latitude      Decimal?
+  longitude     Decimal?
+  googleMapsUrl String?
+
+  // Contact Information
+  phone    String?
+  whatsapp String?
+  email    String?
+
+  // Operating Hours
+  openingTime    String
+  closingTime    String
+  operatingNotes String?
+
+  // Facilities
+  parking       Boolean
+  accessibility Boolean
+  ablutionArea  Boolean
+  restroom      Boolean
+
+  // Visitor Information
+  navigationTitle String?
+  directionNotes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SocialMedia {
+  id           String  @id @default(cuid())
+  platform     String  @unique
+  url          String
+  iconId       String?
+  icon         Media?  @relation(fields: [iconId], references: [id])
+  displayOrder Int
+  isActive     Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([displayOrder])
+  @@index([isActive])
+}
+
+// Append-only — no updatedAt, entries are never edited after creation.
+model AuditLog {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id])
+  module      String
+  action      String
+  entityType  String
+  entityId    String
+  description String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Only one Hero may have isPublished = true at a time — enforced at the
+// application layer when publishing (publishing a Hero unpublishes the rest).
+model Hero {
+  id                String    @id @default(cuid())
+  title             String
+  subtitle          String?
+  backgroundImageId String?
+  backgroundImage   Media?    @relation(fields: [backgroundImageId], references: [id])
+  isPublished       Boolean   @default(false)
+  publishedAt       DateTime?
+  createdById       String
+  createdBy         User      @relation("HeroCreatedBy", fields: [createdById], references: [id])
+  updatedById       String
+  updatedBy         User      @relation("HeroUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+// Only one About record may be published at a time — enforced at the
+// application layer when publishing. Taglines follow the published About
+// record automatically; they are not published separately.
+model About {
+  id               String    @id @default(cuid())
+  title            String
+  introduction     String
+  history          String
+  vision           String
+  mission          String
+  aboutPageContent String?
+  isPublished      Boolean   @default(false)
+  publishedAt      DateTime?
+  createdById      String
+  createdBy        User      @relation("AboutCreatedBy", fields: [createdById], references: [id])
+  updatedById      String
+  updatedBy        User      @relation("AboutUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  taglines Tagline[]
+
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+model Tagline {
+  id          String  @id @default(cuid())
+  aboutId     String
+  about       About   @relation(fields: [aboutId], references: [id])
+  title       String
+  description String
+  iconId      String?
+  icon        Media?  @relation(fields: [iconId], references: [id])
+  sortOrder   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([aboutId, sortOrder])
+  @@index([sortOrder])
+}
+
+model EventCategory {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  slug      String  @unique
+  color     String?
+  iconId    String?
+  icon      Media?  @relation(fields: [iconId], references: [id])
+  sortOrder Int
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+}
+
+model Event {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String        @unique
+  excerpt         String
+  description     String
+  featuredImageId String?
+  featuredImage   Media?        @relation(fields: [featuredImageId], references: [id])
+  categoryId      String
+  category        EventCategory @relation(fields: [categoryId], references: [id])
+  location        String
+  startDate       DateTime
+  endDate         DateTime?
+  startTime       String
+  endTime         String?
+  isFeatured      Boolean       @default(false)
+  isPublished     Boolean       @default(false)
+  publishedAt     DateTime?
+  createdById     String
+  createdBy       User          @relation("EventCreatedBy", fields: [createdById], references: [id])
+  updatedById     String
+  updatedBy       User          @relation("EventUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  galleryAlbums GalleryAlbum[]
+
+  @@index([startDate])
+  @@index([categoryId])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([isFeatured])
+}
+
+// Only published albums appear publicly. Photos inherit their album's
+// publish status and are never published individually.
+model GalleryAlbum {
+  id           String    @id @default(cuid())
+  title        String
+  slug         String    @unique
+  description  String?
+  coverImageId String?
+  coverImage   Media?    @relation(fields: [coverImageId], references: [id])
+  eventId      String?
+  event        Event?    @relation(fields: [eventId], references: [id])
+  eventDate    DateTime?
+  isFeatured   Boolean   @default(false)
+  isPublished  Boolean   @default(false)
+  publishedAt  DateTime?
+  sortOrder    Int
+  createdById  String
+  createdBy    User      @relation("GalleryAlbumCreatedBy", fields: [createdById], references: [id])
+  updatedById  String
+  updatedBy    User      @relation("GalleryAlbumUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos GalleryPhoto[]
+
+  @@index([eventId])
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@index([eventDate])
+  @@index([sortOrder])
+}
+
+model GalleryPhoto {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     GalleryAlbum @relation(fields: [albumId], references: [id])
+  mediaId   String
+  media     Media        @relation(fields: [mediaId], references: [id])
+  caption   String?
+  altText   String?
+  sortOrder Int
+
+  createdAt DateTime @default(now())
+
+  @@index([albumId])
+  @@index([mediaId])
+  @@index([sortOrder])
+}
+
+// Singleton — exactly one row should ever exist; enforced at the
+// application layer. Daily prayer schedules are calculated at request time
+// from these settings and are never stored.
+model PrayerSetting {
+  id                String   @id @default(cuid())
+  mosqueName        String
+  latitude          Decimal
+  longitude         Decimal
+  timezone          String
+  calculationMethod String
+  madhab            String
+  isAutomatic       Boolean  @default(true)
+  fajrAngle         Decimal?
+  ishaAngle         Decimal?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One override per Gregorian date. Checked first when rendering the Hijri
+// date; falls back to automatic calculation when no override exists.
+model HijriOverride {
+  id            String   @id @default(cuid())
+  gregorianDate DateTime @unique
+  hijriDay      Int
+  hijriMonth    Int
+  hijriYear     Int
+  notes         String?
+  source        String?
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// The spreadsheet remains the source of truth for accounting; this table
+// stores only the published summary figures and links shown on the website.
+model FinancialProgram {
+  id             String  @id @default(cuid())
+  name           String  @unique
+  slug           String  @unique
+  description    String?
+  iconId         String?
+  icon           Media?  @relation(fields: [iconId], references: [id])
+  color          String?
+  showOnHomepage Boolean @default(true)
+  displayOrder   Int
+  isActive       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports FinancialReport[]
+
+  @@index([displayOrder])
+  @@index([isActive])
+  @@index([showOnHomepage])
+}
+
+// One report per program per calendar month. Only published reports are
+// visible publicly; the CMS never calculates or edits the figures itself.
+model FinancialReport {
+  id             String           @id @default(cuid())
+  programId      String
+  program        FinancialProgram @relation(fields: [programId], references: [id])
+  reportMonth    Int
+  reportYear     Int
+  dataSource     String           @default("manual")
+  totalFund      Decimal          @default(0)
+  monthlyIncome  Decimal          @default(0)
+  monthlyExpense Decimal          @default(0)
+  currentBalance Decimal          @default(0)
+  spreadsheetUrl String?
+  viewerUrl      String?
+  notes          String?
+  isPublished    Boolean          @default(false)
+  publishedAt    DateTime?
+  createdById    String
+  createdBy      User             @relation("FinancialReportCreatedBy", fields: [createdById], references: [id])
+  updatedById    String
+  updatedBy      User             @relation("FinancialReportUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([programId, reportMonth, reportYear])
+  @@index([reportYear])
+  @@index([reportMonth])
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+// Bank account and QRIS payment details are shared mosque-wide and live on
+// SiteSetting — a DonationProgram only describes the purpose of a donation,
+// it does not carry its own payment information.
+model DonationProgram {
+  id                   String    @id @default(cuid())
+  name                 String    @unique
+  slug                 String    @unique
+  shortDescription     String?
+  content              String?
+  donationInstructions String?
+  coverImageId         String?
+  coverImage           Media?    @relation(fields: [coverImageId], references: [id])
+  displayOrder         Int
+  isFeatured           Boolean   @default(false)
+  isPublished          Boolean   @default(false)
+  publishedAt          DateTime?
+  createdById          String
+  createdBy            User      @relation("DonationProgramCreatedBy", fields: [createdById], references: [id])
+  updatedById          String
+  updatedBy            User      @relation("DonationProgramUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([displayOrder])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([isFeatured])
+}
