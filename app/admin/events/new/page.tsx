@@ -1,0 +1,22 @@
+import { getSelectableEventCategories } from "@/lib/events/event-categories";
+import { EventForm } from "@/components/admin/EventForm";
+
+export default async function NewEventPage() {
+  const categories = await getSelectableEventCategories();
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-heading font-semibold text-heading">
+          Create Event
+        </h2>
+
+        <p className="mt-2 text-body text-muted-foreground">
+          Tambahkan kegiatan baru untuk ditampilkan di beranda.
+        </p>
+      </div>
+
+      <EventForm categories={categories} />
+    </div>
+  );
+}

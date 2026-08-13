@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { slugify } from "@/lib/slug";
 
 export interface CategoryActionState {
   status: "idle" | "success" | "error";
@@ -19,21 +20,6 @@ function readOptionalString(formData: FormData, key: string): string | null {
   const value = formData.get(key);
   const trimmed = typeof value === "string" ? value.trim() : "";
   return trimmed === "" ? null : trimmed;
-}
-
-/**
- * Small local slug normalizer — lowercase, ASCII, hyphen-separated. No
- * slug utility exists elsewhere in the project and this doesn't warrant a
- * dependency.
- */
-function slugify(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "") // strip combining accents (e.g. e-with-acute -> e)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 interface ParsedCategoryInput {
