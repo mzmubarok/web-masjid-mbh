@@ -10,6 +10,7 @@ import {
   Images,
   LayoutDashboard,
   Settings,
+  Share2,
   WalletCards,
 } from "lucide-react";
 
@@ -63,6 +64,11 @@ const navigation = [
     label: "Media",
     href: "/admin/media",
     icon: ImagePlus,
+  },
+  {
+    label: "Social Media",
+    href: "/admin/social-media",
+    icon: Share2,
   },
   {
     label: "Settings",
