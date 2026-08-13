@@ -1,5 +1,6 @@
 import { getCurrentAbout } from "@/lib/about/about";
 import { AboutForm } from "@/components/admin/AboutForm";
+import { TaglineForm } from "@/components/admin/TaglineForm";
 
 export default async function AboutPage() {
   const about = await getCurrentAbout();
@@ -17,6 +18,8 @@ export default async function AboutPage() {
       </div>
 
       <AboutForm about={about} />
+
+      <TaglineForm aboutId={about?.id ?? null} taglines={about?.taglines ?? []} />
     </div>
   );
 }

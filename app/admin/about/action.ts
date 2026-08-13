@@ -32,8 +32,9 @@ function readOptionalString(formData: FormData, key: string): string | null {
  * Same single-record convention as `updateHero`: this UI only ever touches
  * one row, so "only one About can be published" holds automatically.
  *
- * Taglines (the three core-value cards) are a separate related model and
- * are intentionally not managed here — see the implementation report.
+ * Taglines (the three core-value cards) are a separate related model with
+ * their own required `aboutId`, so they're managed by `updateTaglines`
+ * below rather than as fields on this action.
  */
 export async function updateAbout(
   _prevState: AboutActionState,
@@ -117,4 +118,107 @@ export async function updateAbout(
   revalidatePath("/");
 
   return { status: "success", message: "About section updated successfully." };
+}
+
+export interface TaglineActionState {
+  status: "idle" | "success" | "error";
+  message: string;
+}
+
+const TAGLINE_SLOTS = [1, 2, 3] as const;
+
+/**
+ * Creates or updates the three Tagline slots (sortOrder 1-3) belonging to
+ * the given About record. A Tagline cannot exist without an About record,
+ * so `aboutId` (hidden field, sourced from the About record already loaded
+ * on the page) is re-verified against the database before writing anything.
+ *
+ * Each slot is independent: leaving both fields blank on a slot that has no
+ * existing row skips it (nothing to save yet); leaving both blank on a slot
+ * that already has a row is a validation error, since title/description are
+ * required whenever a row exists — this action never deletes a Tagline.
+ * Existing rows outside slots 1-3 (if any) are never touched.
+ */
+export async function updateTaglines(
+  _prevState: TaglineActionState,
+  formData: FormData
+): Promise<TaglineActionState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to update taglines." };
+  }
+
+  const aboutId = readOptionalString(formData, "aboutId");
+
+  if (!aboutId) {
+    return {
+      status: "error",
+      message: "Save the About content above first — taglines need an About record to belong to.",
+    };
+  }
+
+  const about = await prisma.about.findUnique({ where: { id: aboutId } });
+
+  if (!about) {
+    return {
+      status: "error",
+      message: "The About record this tagline belongs to no longer exists. Please reload the page.",
+    };
+  }
+
+  const existingTaglines = await prisma.tagline.findMany({ where: { aboutId } });
+  const existingBySortOrder = new Map(existingTaglines.map((tagline) => [tagline.sortOrder, tagline]));
+
+  const errors: string[] = [];
+  const slotsToSave: { sortOrder: number; title: string; description: string }[] = [];
+
+  for (const sortOrder of TAGLINE_SLOTS) {
+    const title = readOptionalString(formData, `tagline${sortOrder}Title`);
+    const description = readOptionalString(formData, `tagline${sortOrder}Description`);
+    const hasExisting = existingBySortOrder.has(sortOrder);
+
+    if (!title && !description) {
+      if (hasExisting) {
+        errors.push(`Tagline ${sortOrder}: Title and Description are required.`);
+      }
+      // No existing row and both fields blank — slot just hasn't been filled in yet.
+      continue;
+    }
+
+    if (!title || !description) {
+      errors.push(`Tagline ${sortOrder}: Title and Description are required.`);
+      continue;
+    }
+
+    slotsToSave.push({ sortOrder, title, description });
+  }
+
+  if (errors.length > 0) {
+    return { status: "error", message: errors.join(" ") };
+  }
+
+  if (slotsToSave.length === 0) {
+    return { status: "error", message: "Enter a title and description for at least one tagline." };
+  }
+
+  try {
+    await prisma.$transaction(
+      slotsToSave.map(({ sortOrder, title, description }) =>
+        prisma.tagline.upsert({
+          where: { aboutId_sortOrder: { aboutId, sortOrder } },
+          update: { title, description },
+          create: { aboutId, sortOrder, title, description },
+        })
+      )
+    );
+  } catch (error) {
+    console.error("Failed to update taglines:", error);
+    return { status: "error", message: "Something went wrong while saving. Please try again." };
+  }
+
+  revalidatePath("/admin/about");
+  revalidatePath("/");
+
+  return { status: "success", message: "Taglines updated successfully." };
 }
