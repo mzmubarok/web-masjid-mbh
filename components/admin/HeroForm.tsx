@@ -64,8 +64,13 @@ export function HeroForm({ hero }: HeroFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Title" htmlFor="title" required>
-            <Input id="title" name="title" required defaultValue={hero?.title ?? ""} />
+          <Field
+            label="Title"
+            htmlFor="title"
+            required
+            hint="Press Enter for a manual line break — the public Hero renders it exactly as entered."
+          >
+            <Textarea id="title" name="title" required rows={3} defaultValue={hero?.title ?? ""} />
           </Field>
 
           <Field label="Subtitle" htmlFor="subtitle">
