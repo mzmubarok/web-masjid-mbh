@@ -7,7 +7,6 @@ import { updateAbout } from "@/app/admin/about/action";
 import type { About } from "@/lib/generated/prisma/client";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils";
 
@@ -64,8 +63,13 @@ export function AboutForm({ about }: AboutFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Title" htmlFor="title" required>
-            <Input id="title" name="title" required defaultValue={about?.title ?? ""} />
+          <Field
+            label="Title"
+            htmlFor="title"
+            required
+            hint="Press Enter for a manual line break — the public About section renders it exactly as entered."
+          >
+            <Textarea id="title" name="title" required rows={3} defaultValue={about?.title ?? ""} />
           </Field>
 
           <Field label="Introduction" htmlFor="introduction" required>

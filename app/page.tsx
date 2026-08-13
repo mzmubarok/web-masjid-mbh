@@ -14,10 +14,11 @@ import {
   Footer,
 } from "@/components/sections";
 import { getCurrentHero } from "@/lib/hero/hero";
+import { getCurrentAbout } from "@/lib/about/about";
 
 // Homepage — all sections are now implemented and mounted.
 export default async function Home() {
-  const hero = await getCurrentHero();
+  const [hero, about] = await Promise.all([getCurrentHero(), getCurrentAbout()]);
 
   return (
     <PageWrapper>
@@ -37,7 +38,29 @@ export default async function Home() {
           imageSrc={hero?.backgroundImage?.storagePath ?? undefined}
           imageAlt={hero?.backgroundImage?.altText ?? undefined}
         />
-        <About />
+        <About
+          // Only plain strings/objects cross into the Client Component —
+          // never the About record itself. Omitted (undefined) falls back
+          // to About's own existing hardcoded defaults, unchanged.
+          title={about?.title ?? undefined}
+          introduction={about?.introduction ?? undefined}
+          facts={
+            about
+              ? [
+                  { label: "Sejarah", description: about.history },
+                  { label: "Visi", description: about.vision },
+                  { label: "Misi", description: about.mission },
+                ]
+              : undefined
+          }
+          // Icons are never CMS-driven (see About.tsx's VALUE_ICONS) — only
+          // title/description cross the boundary, mapped onto the existing
+          // icons by position.
+          valueItems={about?.taglines.map((tagline) => ({
+            title: tagline.title,
+            description: tagline.description,
+          }))}
+        />
         <Events />
         <Financial />
         <Infaq />

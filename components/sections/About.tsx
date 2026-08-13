@@ -26,6 +26,18 @@ export interface AboutValue {
   icon: ComponentType<{ className?: string }>;
 }
 
+/** CMS-sourced content for a value card — icon is never CMS-driven, only content. */
+export interface AboutValueItem {
+  title: string;
+  description: string;
+}
+
+// The landing page's own icon identity for the three value cards, in
+// display order — never sourced from the CMS. Reused (by position) for
+// however many `valueItems` the CMS provides; the last icon repeats for
+// any item beyond this list rather than failing.
+const VALUE_ICONS: ComponentType<{ className?: string }>[] = [Landmark, HeartHandshake, Sprout];
+
 const DEFAULT_FACTS: AboutFact[] = [
   {
     label: "Sejarah",
@@ -71,6 +83,12 @@ export interface AboutProps {
   primaryCta?: { label: string; href: string };
   /** The three "Mengaji / Mengabdi / Menghidupi" value cards below. */
   values?: AboutValue[];
+  /**
+   * CMS-sourced value-card content (Tagline title/description), mapped onto
+   * `VALUE_ICONS` by position. Takes over from `values` when provided —
+   * omit (or pass an empty array) to keep the hardcoded `values` untouched.
+   */
+  valueItems?: AboutValueItem[];
   /** Anchor id — Navbar's "Tentang" link points to `#tentang` by default. */
   id?: string;
   className?: string;
@@ -93,9 +111,21 @@ export function About({
   imageAlt = "Suasana Masjid Baitul Hikmah Gondolayu Lor",
   primaryCta = { label: "Tentang Masjid", href: "/tentang" },
   values = DEFAULT_VALUES,
+  valueItems,
   id = "tentang",
   className,
 }: AboutProps) {
+  // valueItems (CMS) takes over from `values` when provided — icon always
+  // comes from VALUE_ICONS by position, never from the CMS.
+  const resolvedValues: AboutValue[] =
+    valueItems && valueItems.length > 0
+      ? valueItems.map((item, index) => ({
+          title: item.title,
+          description: item.description,
+          icon: VALUE_ICONS[Math.min(index, VALUE_ICONS.length - 1)],
+        }))
+      : values;
+
   // "md" — matches every other homepage section's vertical rhythm; this
   // used to be the one outlier at "lg", which is what made the gap before
   // Events read as noticeably bigger than the rest of the page.
@@ -130,7 +160,14 @@ export function About({
             >
               <Stack gap="lg">
                 <motion.div variants={fadeUp}>
-                  <SectionHeader eyebrow={eyebrow} title={title} level="h2" />
+                  <SectionHeader
+                    eyebrow={eyebrow}
+                    // whitespace-pre-line (same convention Hero uses) — renders
+                    // a manual line break from the CMS exactly as entered,
+                    // without touching SectionHeader itself.
+                    title={<span className="whitespace-pre-line">{title}</span>}
+                    level="h2"
+                  />
                 </motion.div>
 
                 <motion.p variants={fadeUp} className="text-body-lg text-text">
@@ -164,7 +201,7 @@ export function About({
             variants={staggerChildren(0.08)}
           >
             <Grid cols={3}>
-              {values.map((value) => (
+              {resolvedValues.map((value) => (
                 <motion.div key={value.title} variants={fadeUp}>
                   <Card interactive className="group h-full">
                     <CardHeader>
