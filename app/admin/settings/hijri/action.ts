@@ -133,6 +133,9 @@ export async function createHijriOverride(
   }
 
   revalidatePath("/admin/settings/hijri");
+  // The public homepage reads today's HijriOverride at request/build time
+  // (see app/page.tsx) — same convention as updateHero/updateAbout.
+  revalidatePath("/");
   redirect("/admin/settings/hijri");
 }
 
@@ -191,6 +194,7 @@ export async function updateHijriOverride(
 
   revalidatePath("/admin/settings/hijri");
   revalidatePath(`/admin/settings/hijri/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/settings/hijri");
 }
 
@@ -223,6 +227,7 @@ export async function deleteHijriOverride(
   }
 
   revalidatePath("/admin/settings/hijri");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.
