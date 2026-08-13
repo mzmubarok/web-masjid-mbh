@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  BookOpenText,
   CalendarDays,
   ChartNoAxesCombined,
   FileText,
@@ -20,6 +21,11 @@ const navigation = [
     label: "Hero",
     href: "/admin/hero",
     icon: Image,
+  },
+  {
+    label: "About",
+    href: "/admin/about",
+    icon: BookOpenText,
   },
   {
     label: "Events",
