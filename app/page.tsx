@@ -15,10 +15,34 @@ import {
 } from "@/components/sections";
 import { getCurrentHero } from "@/lib/hero/hero";
 import { getCurrentAbout } from "@/lib/about/about";
+import { getHijriOverrideForDate } from "@/lib/hijri/hijri-overrides";
+import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
+import { parseDateOnly } from "@/lib/date";
+
+// Same Asia/Jakarta convention already hardcoded in Hero.tsx's own
+// getTodayGregorianDate and in usePrayerCountdown — reused here (not a new
+// timezone source) purely to look up "today's" HijriOverride, in the same
+// zone-parts style usePrayerCountdown already uses.
+function getTodayDateKeyInJakarta(): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
 
 // Homepage — all sections are now implemented and mounted.
 export default async function Home() {
-  const [hero, about] = await Promise.all([getCurrentHero(), getCurrentAbout()]);
+  const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
+
+  const [hero, about, hijriOverride] = await Promise.all([
+    getCurrentHero(),
+    getCurrentAbout(),
+    todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
+  ]);
 
   return (
     <PageWrapper>
@@ -37,6 +61,16 @@ export default async function Home() {
           tagline={hero?.subtitle ?? undefined}
           imageSrc={hero?.backgroundImage?.storagePath ?? undefined}
           imageAlt={hero?.backgroundImage?.altText ?? undefined}
+          // Only set when an override exists for today — otherwise omitted,
+          // preserving Hero's existing hardcoded hijriDate fallback exactly
+          // (there is no automatic Hijri calculation to fall back to; see
+          // report). formatHijriDate matches Hero's own "12 Ramadan 1447 H"
+          // style so both sources render consistently.
+          hijriDate={
+            hijriOverride
+              ? formatHijriDate(hijriOverride.hijriDay, hijriOverride.hijriMonth, hijriOverride.hijriYear)
+              : undefined
+          }
         />
         <About
           // Only plain strings/objects cross into the Client Component —
