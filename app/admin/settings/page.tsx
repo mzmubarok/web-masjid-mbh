@@ -28,6 +28,9 @@ export default async function SettingsPage() {
           <Link href="/admin/settings/contact" className={cn(buttonVariants({ variant: "outline" }))}>
             Contact & Location
           </Link>
+          <Link href="/admin/settings/hijri" className={cn(buttonVariants({ variant: "outline" }))}>
+            Hijri Overrides
+          </Link>
         </div>
       </div>
 
