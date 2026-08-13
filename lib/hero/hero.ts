@@ -11,6 +11,7 @@ export async function getCurrentHero() {
   const published = await prisma.hero.findFirst({
     where: { isPublished: true },
     orderBy: { publishedAt: "desc" },
+    include: { backgroundImage: true },
   });
 
   if (published) {
@@ -19,5 +20,6 @@ export async function getCurrentHero() {
 
   return prisma.hero.findFirst({
     orderBy: { updatedAt: "desc" },
+    include: { backgroundImage: true },
   });
 }
