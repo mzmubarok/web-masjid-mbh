@@ -9,6 +9,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations need a direct (non-pooled) connection — Supabase's pooler
+    // (Supavisor/PgBouncer, used for DATABASE_URL at runtime) doesn't
+    // support the session-level operations `migrate` relies on. Falls back
+    // to DATABASE_URL for setups that don't split the two (e.g. a plain
+    // local Postgres with no pooler in front of it).
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

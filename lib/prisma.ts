@@ -1,14 +1,21 @@
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const adapter = new PrismaBetterSqlite3({
-  url: `file:${path.join(process.cwd(), "dev.db")}`,
-});
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL is not set. Configure it in your environment (see .env for local development, or Vercel Project Settings for production)."
+  );
+}
+
+// Pooled connection (e.g. Supabase's Supavisor/PgBouncer) — safe for a
+// serverless runtime where many function instances may each hold a
+// connection. Migrations use a separate, direct connection; see
+// prisma.config.ts.
+const adapter = new PrismaPg(process.env.DATABASE_URL);
 
 export const prisma =
   globalForPrisma.prisma ?? new PrismaClient({ adapter });
