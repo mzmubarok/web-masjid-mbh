@@ -21,9 +21,14 @@ export default async function SettingsPage() {
           </p>
         </div>
 
-        <Link href="/admin/settings/prayer" className={cn(buttonVariants({ variant: "outline" }))}>
-          Prayer Settings
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/settings/prayer" className={cn(buttonVariants({ variant: "outline" }))}>
+            Prayer Settings
+          </Link>
+          <Link href="/admin/settings/contact" className={cn(buttonVariants({ variant: "outline" }))}>
+            Contact & Location
+          </Link>
+        </div>
       </div>
 
       {settings ? (
