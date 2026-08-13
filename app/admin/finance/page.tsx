@@ -14,14 +14,20 @@ export default async function FinancialProgramsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-heading font-semibold text-heading">
-          Financial Programs
-        </h2>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-heading font-semibold text-heading">
+            Financial Programs
+          </h2>
 
-        <p className="mt-2 text-body text-muted-foreground">
-          Kelola program keuangan yang digunakan untuk mengelompokkan laporan donasi masjid.
-        </p>
+          <p className="mt-2 text-body text-muted-foreground">
+            Kelola program keuangan yang digunakan untuk mengelompokkan laporan donasi masjid.
+          </p>
+        </div>
+
+        <Link href="/admin/finance/reports" className={cn(buttonVariants({ variant: "outline" }))}>
+          Financial Reports
+        </Link>
       </div>
 
       <FinancialProgramForm media={media} />
