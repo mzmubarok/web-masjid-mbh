@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   FileText,
+  HandCoins,
   Image,
   ImagePlus,
   Images,
@@ -42,6 +43,11 @@ const navigation = [
     label: "Finance",
     href: "/admin/finance",
     icon: WalletCards,
+  },
+  {
+    label: "Donations",
+    href: "/admin/donations",
+    icon: HandCoins,
   },
   {
     label: "Reports",
