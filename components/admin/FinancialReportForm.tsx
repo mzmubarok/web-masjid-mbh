@@ -11,9 +11,22 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils";
 
+// totalFund/monthlyIncome/monthlyExpense/currentBalance arrive
+// pre-serialized to string — Decimal objects can't cross the Server ->
+// Client Component boundary as-is.
+type FinancialReportFormValues = Omit<
+  FinancialReport,
+  "totalFund" | "monthlyIncome" | "monthlyExpense" | "currentBalance"
+> & {
+  totalFund: string;
+  monthlyIncome: string;
+  monthlyExpense: string;
+  currentBalance: string;
+};
+
 export interface FinancialReportFormProps {
   /** Omit (or pass null) to render a "create new" form; pass a report to edit it in place. */
-  report?: FinancialReport | null;
+  report?: FinancialReportFormValues | null;
   /** Selectable programs — active ones, plus the report's own program if it's since been deactivated. */
   programs: FinancialProgram[];
 }

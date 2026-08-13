@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { del, head, BlobNotFoundError } from "@vercel/blob";
 
 import { auth } from "@/auth";
@@ -155,8 +156,7 @@ export async function updateMediaMetadata(
 
   revalidatePath("/admin/media");
   revalidatePath(`/admin/media/${id}/edit`);
-
-  return { status: "success", message: "Media details updated." };
+  redirect("/admin/media");
 }
 
 /**

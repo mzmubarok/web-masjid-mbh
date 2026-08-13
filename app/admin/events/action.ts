@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -204,8 +205,7 @@ export async function createEvent(
   }
 
   revalidatePath("/admin/events");
-
-  return { status: "success", message: `Event "${parsed.title}" created.` };
+  redirect("/admin/events");
 }
 
 /** Updates an existing Event by id. `updatedById` is always the current session's user. */
@@ -281,8 +281,7 @@ export async function updateEvent(
 
   revalidatePath("/admin/events");
   revalidatePath(`/admin/events/${id}/edit`);
-
-  return { status: "success", message: `Event "${parsed.title}" updated.` };
+  redirect("/admin/events");
 }
 
 /**

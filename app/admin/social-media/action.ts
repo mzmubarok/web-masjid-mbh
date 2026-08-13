@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -117,8 +118,7 @@ export async function createSocialMedia(
   }
 
   revalidatePath("/admin/social-media");
-
-  return { status: "success", message: `Social media link for "${parsed.platform}" created.` };
+  redirect("/admin/social-media");
 }
 
 /** Updates an existing SocialMedia link's core fields. Active status is toggled separately. */
@@ -179,8 +179,7 @@ export async function updateSocialMedia(
 
   revalidatePath("/admin/social-media");
   revalidatePath(`/admin/social-media/${id}/edit`);
-
-  return { status: "success", message: `Social media link for "${parsed.platform}" updated.` };
+  redirect("/admin/social-media");
 }
 
 /**

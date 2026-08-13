@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -204,8 +205,7 @@ export async function createFinancialReport(
   }
 
   revalidatePath("/admin/finance/reports");
-
-  return { status: "success", message: "Financial report created." };
+  redirect("/admin/finance/reports");
 }
 
 /** Updates an existing FinancialReport by id. `updatedById` is always the current session's user. */
@@ -288,8 +288,7 @@ export async function updateFinancialReport(
 
   revalidatePath("/admin/finance/reports");
   revalidatePath(`/admin/finance/reports/${id}/edit`);
-
-  return { status: "success", message: "Financial report updated." };
+  redirect("/admin/finance/reports");
 }
 
 /**

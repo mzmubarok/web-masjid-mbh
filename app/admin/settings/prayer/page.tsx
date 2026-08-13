@@ -22,7 +22,21 @@ export default async function PrayerSettingsPage() {
         </div>
       ) : null}
 
-      <PrayerSettingsForm settings={settings} />
+      <PrayerSettingsForm
+        settings={
+          settings
+            ? {
+                ...settings,
+                // Decimal objects can't cross the Server -> Client Component
+                // boundary as-is — serialize to plain strings first.
+                latitude: settings.latitude.toString(),
+                longitude: settings.longitude.toString(),
+                fajrAngle: settings.fajrAngle?.toString() ?? null,
+                ishaAngle: settings.ishaAngle?.toString() ?? null,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

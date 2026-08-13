@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -132,8 +133,7 @@ export async function createHijriOverride(
   }
 
   revalidatePath("/admin/settings/hijri");
-
-  return { status: "success", message: "Hijri override created." };
+  redirect("/admin/settings/hijri");
 }
 
 /** Updates an existing HijriOverride by id. `createdById` is never changed — the schema has no "updatedBy" field for this model. */
@@ -191,8 +191,7 @@ export async function updateHijriOverride(
 
   revalidatePath("/admin/settings/hijri");
   revalidatePath(`/admin/settings/hijri/${id}/edit`);
-
-  return { status: "success", message: "Hijri override updated." };
+  redirect("/admin/settings/hijri");
 }
 
 /** Deletes a HijriOverride. Only the override row is removed — its creator (User) is never touched. */

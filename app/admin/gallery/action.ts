@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -171,8 +172,7 @@ export async function createGalleryAlbum(
   }
 
   revalidatePath("/admin/gallery");
-
-  return { status: "success", message: `Album "${parsed.title}" created.` };
+  redirect("/admin/gallery");
 }
 
 /** Updates an existing GalleryAlbum by id. `updatedById` is always the current session's user. */
@@ -250,8 +250,7 @@ export async function updateGalleryAlbum(
 
   revalidatePath("/admin/gallery");
   revalidatePath(`/admin/gallery/${id}/edit`);
-
-  return { status: "success", message: `Album "${parsed.title}" updated.` };
+  redirect("/admin/gallery");
 }
 
 /**

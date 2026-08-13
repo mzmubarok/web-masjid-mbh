@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -150,8 +151,7 @@ export async function createDonationProgram(
   }
 
   revalidatePath("/admin/donations");
-
-  return { status: "success", message: `Donation program "${parsed.name}" created.` };
+  redirect("/admin/donations");
 }
 
 /** Updates an existing DonationProgram by id. `updatedById` is always the current session's user. */
@@ -226,8 +226,7 @@ export async function updateDonationProgram(
 
   revalidatePath("/admin/donations");
   revalidatePath(`/admin/donations/${id}/edit`);
-
-  return { status: "success", message: `Donation program "${parsed.name}" updated.` };
+  redirect("/admin/donations");
 }
 
 /**

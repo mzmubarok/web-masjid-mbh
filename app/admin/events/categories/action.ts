@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -112,8 +113,7 @@ export async function createEventCategory(
   }
 
   revalidatePath("/admin/events/categories");
-
-  return { status: "success", message: `Category "${name}" created.` };
+  redirect("/admin/events/categories");
 }
 
 /** Updates an existing EventCategory's name/slug/color/sortOrder. Active status is toggled separately. */
@@ -168,8 +168,7 @@ export async function updateEventCategory(
 
   revalidatePath("/admin/events/categories");
   revalidatePath(`/admin/events/categories/${id}/edit`);
-
-  return { status: "success", message: `Category "${name}" updated.` };
+  redirect("/admin/events/categories");
 }
 
 /**

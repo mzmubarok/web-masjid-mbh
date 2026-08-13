@@ -11,9 +11,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 
+// latitude/longitude/fajrAngle/ishaAngle arrive pre-serialized to string |
+// null — Decimal objects can't cross the Server -> Client Component
+// boundary as-is.
+type PrayerSettingsFormValues = Omit<PrayerSetting, "latitude" | "longitude" | "fajrAngle" | "ishaAngle"> & {
+  latitude: string;
+  longitude: string;
+  fajrAngle: string | null;
+  ishaAngle: string | null;
+};
+
 export interface PrayerSettingsFormProps {
   /** Null until the settings form is saved for the first time — saving then creates the singleton record. */
-  settings: PrayerSetting | null;
+  settings: PrayerSettingsFormValues | null;
 }
 
 interface FieldProps {

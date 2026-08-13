@@ -30,7 +30,18 @@ export default async function EditFinancialReportPage({
         </p>
       </div>
 
-      <FinancialReportForm report={report} programs={programs} />
+      <FinancialReportForm
+        report={{
+          ...report,
+          // Decimal objects can't cross the Server -> Client Component
+          // boundary as-is — serialize to plain strings first.
+          totalFund: report.totalFund.toString(),
+          monthlyIncome: report.monthlyIncome.toString(),
+          monthlyExpense: report.monthlyExpense.toString(),
+          currentBalance: report.currentBalance.toString(),
+        }}
+        programs={programs}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -135,8 +136,7 @@ export async function createFinancialProgram(
   }
 
   revalidatePath("/admin/finance");
-
-  return { status: "success", message: `Financial program "${parsed.name}" created.` };
+  redirect("/admin/finance");
 }
 
 /** Updates an existing FinancialProgram's core fields. Active/homepage status are toggled separately. */
@@ -201,8 +201,7 @@ export async function updateFinancialProgram(
 
   revalidatePath("/admin/finance");
   revalidatePath(`/admin/finance/${id}/edit`);
-
-  return { status: "success", message: `Financial program "${parsed.name}" updated.` };
+  redirect("/admin/finance");
 }
 
 /**
