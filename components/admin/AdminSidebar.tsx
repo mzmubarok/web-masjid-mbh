@@ -5,6 +5,7 @@ import {
   ChartNoAxesCombined,
   FileText,
   Image,
+  ImagePlus,
   Images,
   LayoutDashboard,
   Settings,
@@ -51,6 +52,11 @@ const navigation = [
     label: "Analytics",
     href: "/admin/analytics",
     icon: ChartNoAxesCombined,
+  },
+  {
+    label: "Media",
+    href: "/admin/media",
+    icon: ImagePlus,
   },
   {
     label: "Settings",
