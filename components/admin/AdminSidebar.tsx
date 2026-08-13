@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   FileText,
+  Image,
   Images,
   LayoutDashboard,
   Settings,
@@ -14,6 +15,11 @@ const navigation = [
     label: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Hero",
+    href: "/admin/hero",
+    icon: Image,
   },
   {
     label: "Events",
