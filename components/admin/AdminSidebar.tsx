@@ -28,8 +28,10 @@ const navigation = [
     icon: BookOpenText,
   },
   {
+    // Points at Categories for now — the only Events page implemented so
+    // far. Repoint to "/admin/events" once the Event list/CRUD page exists.
     label: "Events",
-    href: "/admin/events",
+    href: "/admin/events/categories",
     icon: CalendarDays,
   },
   {
