@@ -22,8 +22,8 @@ export type FinancialSummaryItem = FinancialSummaryFigure;
 
 export interface FinancialFund {
   name: string;
-  description: string;
-  icon: ComponentType<{ className?: string }>;
+  /** Optional — not every fund has one on record. */
+  description?: string;
   /** Tints this fund's icon circle so the three cards read as distinct at a glance. */
   tone: FinancialSummaryCardTone;
   /** Row 1 — label wording (e.g. "Total Dana" vs "Total Saldo") intentionally varies per fund. */
@@ -34,11 +34,15 @@ export interface FinancialFund {
   currentBalance: FinancialSummaryItem;
 }
 
+// FinancialProgram (CMS) has no vector-icon field — icon selection stays
+// presentation-only, resolved by card position, same reasoning as
+// Footer's CONTACT_ICON_BY_LABEL/socialPlatformIcon.
+const FUND_ICONS: ComponentType<{ className?: string }>[] = [Wallet, Building2, Utensils];
+
 const DEFAULT_FUNDS: FinancialFund[] = [
   {
     name: "Infaq Operasional",
     description: "Menopang kebutuhan operasional masjid sehari-hari.",
-    icon: Wallet,
     tone: "primary",
     primaryStat: { label: "Total Saldo", value: "Rp 45.200.000" },
     secondaryStats: [
@@ -50,7 +54,6 @@ const DEFAULT_FUNDS: FinancialFund[] = [
   {
     name: "Infaq Pembangunan Masjid",
     description: "Dikhususkan untuk pembangunan dan renovasi masjid.",
-    icon: Building2,
     tone: "secondary",
     primaryStat: { label: "Total Dana", value: "Rp 310.000.000" },
     secondaryStats: [
@@ -62,7 +65,6 @@ const DEFAULT_FUNDS: FinancialFund[] = [
   {
     name: "S3 — Sehari Seribu Saja",
     description: "Mendukung kegiatan Ramadan, terutama penyediaan takjil harian.",
-    icon: Utensils,
     tone: "accent",
     primaryStat: { label: "Total Dana", value: "Rp 18.600.000" },
     secondaryStats: [
@@ -123,12 +125,12 @@ export function Financial({
             className="w-full"
           >
             <Grid cols={3} gap="lg">
-              {funds.map((fund) => (
+              {funds.map((fund, index) => (
                 <motion.div key={fund.name} variants={fadeUp}>
                   <FinancialSummaryCard
                     title={fund.name}
                     description={fund.description}
-                    icon={fund.icon}
+                    icon={FUND_ICONS[index % FUND_ICONS.length]}
                     tone={fund.tone}
                     primaryStat={fund.primaryStat}
                     secondaryStats={fund.secondaryStats}

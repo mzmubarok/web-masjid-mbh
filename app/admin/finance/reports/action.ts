@@ -205,6 +205,10 @@ export async function createFinancialReport(
   }
 
   revalidatePath("/admin/finance/reports");
+  // The public homepage's Financial section reads each program's most recent
+  // published report (see app/page.tsx) — same convention as
+  // updateHero/updateAbout/createEvent.
+  revalidatePath("/");
   redirect("/admin/finance/reports");
 }
 
@@ -288,6 +292,7 @@ export async function updateFinancialReport(
 
   revalidatePath("/admin/finance/reports");
   revalidatePath(`/admin/finance/reports/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/finance/reports");
 }
 
@@ -313,6 +318,7 @@ export async function toggleFinancialReportPublished(id: string, nextIsPublished
   });
 
   revalidatePath("/admin/finance/reports");
+  revalidatePath("/");
 }
 
 /** Deletes a FinancialReport. Never touches its FinancialProgram or any Media. */
@@ -344,6 +350,7 @@ export async function deleteFinancialReport(
   }
 
   revalidatePath("/admin/finance/reports");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.

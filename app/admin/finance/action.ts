@@ -136,6 +136,9 @@ export async function createFinancialProgram(
   }
 
   revalidatePath("/admin/finance");
+  // The public homepage's Financial section reads active, homepage-visible
+  // programs (see app/page.tsx) — same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
   redirect("/admin/finance");
 }
 
@@ -201,6 +204,7 @@ export async function updateFinancialProgram(
 
   revalidatePath("/admin/finance");
   revalidatePath(`/admin/finance/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/finance");
 }
 
@@ -221,6 +225,7 @@ export async function toggleFinancialProgramActive(id: string, nextIsActive: boo
   });
 
   revalidatePath("/admin/finance");
+  revalidatePath("/");
 }
 
 /** Flips `showOnHomepage`. Bound with `.bind(null, id, nextShowOnHomepage)`. */
@@ -237,6 +242,7 @@ export async function toggleFinancialProgramShowOnHomepage(id: string, nextShowO
   });
 
   revalidatePath("/admin/finance");
+  revalidatePath("/");
 }
 
 /**
@@ -278,6 +284,7 @@ export async function deleteFinancialProgram(
   }
 
   revalidatePath("/admin/finance");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.

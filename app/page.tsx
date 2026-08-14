@@ -20,6 +20,8 @@ import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
 import { getFeaturedGalleryAlbums } from "@/lib/gallery/gallery-albums";
+import { getHomepageFinancialSummaries } from "@/lib/finance/financial-reports";
+import { formatFinancialAmount, formatReportPeriod } from "@/lib/finance/format-finance";
 import { getFeaturedDonationProgram } from "@/lib/donations/donation-programs";
 import { getContactLocation } from "@/lib/contact/contact-location";
 import { toWhatsAppHref } from "@/lib/contact/format-contact";
@@ -34,6 +36,11 @@ import type { BadgeProps } from "@/components/ui/Badge";
 // About.tsx already does for Tagline icons: the CMS manages the content,
 // the landing page manages the visual identity.
 const EVENT_CATEGORY_TONES: NonNullable<BadgeProps["tone"]>[] = ["primary", "accent", "secondary"];
+
+// FinancialProgram.color is a freeform hex string, not FinancialSummaryCard's
+// fixed 3-value tone enum — reapplied by position instead, same reasoning as
+// EVENT_CATEGORY_TONES above.
+const FINANCIAL_FUND_TONES: Array<"primary" | "secondary" | "accent"> = ["primary", "secondary", "accent"];
 
 // Same Asia/Jakarta convention already hardcoded in Hero.tsx's own
 // getTodayGregorianDate and in usePrayerCountdown — reused here (not a new
@@ -50,6 +57,19 @@ function getTodayDateKeyInJakarta(): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+/** The most recent (month, year) among a set of reports — so "Terakhir diperbarui" reflects the newest figure actually shown, not "now". */
+function latestReportPeriod(
+  reports: { reportMonth: number; reportYear: number }[]
+): [month: number, year: number] {
+  return reports.reduce<[number, number]>(
+    (latest, report) =>
+      report.reportYear > latest[1] || (report.reportYear === latest[1] && report.reportMonth > latest[0])
+        ? [report.reportMonth, report.reportYear]
+        : latest,
+    [reports[0].reportMonth, reports[0].reportYear]
+  );
+}
+
 // Homepage — all sections are now implemented and mounted.
 export default async function Home() {
   const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
@@ -60,6 +80,7 @@ export default async function Home() {
     hijriOverride,
     upcomingEvents,
     galleryAlbums,
+    financialSummaries,
     featuredDonationProgram,
     contactLocation,
     socialLinks,
@@ -70,6 +91,7 @@ export default async function Home() {
     todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
     getUpcomingEvents(),
     getFeaturedGalleryAlbums(),
+    getHomepageFinancialSummaries(),
     getFeaturedDonationProgram(),
     getContactLocation(),
     getActiveSocialMediaLinks(),
@@ -151,7 +173,38 @@ export default async function Home() {
               : undefined
           }
         />
-        <Financial />
+        <Financial
+          // Only plain strings cross into the Client Component — never the
+          // FinancialProgram/FinancialReport records themselves. Omitted
+          // (undefined, when no active homepage-visible program has a
+          // published report yet) falls back to Financial's own existing
+          // hardcoded defaults, unchanged. Row labels ("Total Dana",
+          // "Pemasukan Bulan Ini", ...) have no matching CMS field — no
+          // field carries per-fund label wording — so they stay fixed
+          // instead of being fabricated per program.
+          funds={
+            financialSummaries.length > 0
+              ? financialSummaries.map(({ program, report }, index) => ({
+                  name: program.name,
+                  description: program.description ?? undefined,
+                  tone: FINANCIAL_FUND_TONES[index % FINANCIAL_FUND_TONES.length],
+                  primaryStat: { label: "Total Dana", value: formatFinancialAmount(report.totalFund) },
+                  secondaryStats: [
+                    { label: "Pemasukan Bulan Ini", value: formatFinancialAmount(report.monthlyIncome) },
+                    { label: "Pengeluaran Bulan Ini", value: formatFinancialAmount(report.monthlyExpense) },
+                  ],
+                  currentBalance: { label: "Saldo Saat Ini", value: formatFinancialAmount(report.currentBalance) },
+                }))
+              : undefined
+          }
+          // The most recent period among the reports actually shown above —
+          // not "now", so the label never claims a report is fresher than it is.
+          lastUpdated={
+            financialSummaries.length > 0
+              ? formatReportPeriod(...latestReportPeriod(financialSummaries.map(({ report }) => report)))
+              : undefined
+          }
+        />
         <Infaq
           // Only plain strings cross into the Client Component — never the
           // DonationProgram/Media record itself. Omitted (undefined, when no
