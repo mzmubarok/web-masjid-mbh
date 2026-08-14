@@ -1,8 +1,9 @@
 import { getSelectableEventCategories } from "@/lib/events/event-categories";
+import { getMediaLibrary } from "@/lib/media/media";
 import { EventForm } from "@/components/admin/EventForm";
 
 export default async function NewEventPage() {
-  const categories = await getSelectableEventCategories();
+  const [categories, media] = await Promise.all([getSelectableEventCategories(), getMediaLibrary()]);
 
   return (
     <div className="space-y-8">
@@ -16,7 +17,7 @@ export default async function NewEventPage() {
         </p>
       </div>
 
-      <EventForm categories={categories} />
+      <EventForm categories={categories} media={media} />
     </div>
   );
 }

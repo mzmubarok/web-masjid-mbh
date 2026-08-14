@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getEventById } from "@/lib/events/events";
 import { getSelectableEventCategories } from "@/lib/events/event-categories";
+import { getMediaLibrary } from "@/lib/media/media";
 import { EventForm } from "@/components/admin/EventForm";
 
 export default async function EditEventPage({
@@ -16,7 +17,10 @@ export default async function EditEventPage({
     notFound();
   }
 
-  const categories = await getSelectableEventCategories(event.categoryId);
+  const [categories, media] = await Promise.all([
+    getSelectableEventCategories(event.categoryId),
+    getMediaLibrary(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -30,7 +34,7 @@ export default async function EditEventPage({
         </p>
       </div>
 
-      <EventForm event={event} categories={categories} />
+      <EventForm event={event} categories={categories} media={media} />
     </div>
   );
 }

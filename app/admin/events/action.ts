@@ -37,6 +37,7 @@ interface ParsedEventInput {
   excerpt: string;
   description: string;
   categoryId: string;
+  featuredImageId: string | null;
   location: string;
   startDate: Date;
   endDate: Date | null;
@@ -124,6 +125,7 @@ function parseEventForm(formData: FormData): ParsedEventInput | { error: string 
     excerpt: values.excerpt,
     description: values.description,
     categoryId: values.categoryId,
+    featuredImageId: readOptionalString(formData, "featuredImageId"),
     location: values.location,
     startDate,
     endDate,
@@ -149,6 +151,15 @@ async function validateCategory(categoryId: string, currentCategoryId?: string):
   return null;
 }
 
+/** Confirms `featuredImageId`, when provided, refers to a real Media record. */
+async function validateFeaturedImage(featuredImageId: string | null): Promise<string | null> {
+  if (!featuredImageId) {
+    return null;
+  }
+  const media = await prisma.media.findUnique({ where: { id: featuredImageId } });
+  return media ? null : "Selected featured image does not exist.";
+}
+
 /** Creates a new Event. `createdById`/`updatedById` are always the current session's user — never client-supplied. */
 export async function createEvent(
   _prevState: EventActionState,
@@ -170,6 +181,11 @@ export async function createEvent(
     return { status: "error", message: categoryError };
   }
 
+  const featuredImageError = await validateFeaturedImage(parsed.featuredImageId);
+  if (featuredImageError) {
+    return { status: "error", message: featuredImageError };
+  }
+
   const slugTaken = await prisma.event.findUnique({ where: { slug: parsed.slug } });
   if (slugTaken) {
     return {
@@ -189,6 +205,7 @@ export async function createEvent(
         excerpt: parsed.excerpt,
         description: parsed.description,
         categoryId: parsed.categoryId,
+        featuredImageId: parsed.featuredImageId,
         location: parsed.location,
         startDate: parsed.startDate,
         endDate: parsed.endDate,
@@ -247,6 +264,11 @@ export async function updateEvent(
     return { status: "error", message: categoryError };
   }
 
+  const featuredImageError = await validateFeaturedImage(parsed.featuredImageId);
+  if (featuredImageError) {
+    return { status: "error", message: featuredImageError };
+  }
+
   const slugConflict = await prisma.event.findFirst({
     where: { id: { not: id }, slug: parsed.slug },
   });
@@ -268,6 +290,7 @@ export async function updateEvent(
         excerpt: parsed.excerpt,
         description: parsed.description,
         categoryId: parsed.categoryId,
+        featuredImageId: parsed.featuredImageId,
         location: parsed.location,
         startDate: parsed.startDate,
         endDate: parsed.endDate,

@@ -5,11 +5,12 @@ import type { ReactNode } from "react";
 
 import { createEvent, updateEvent } from "@/app/admin/events/action";
 import { toDateInputValue } from "@/lib/date";
-import type { Event, EventCategory } from "@/lib/generated/prisma/client";
+import type { Event, EventCategory, Media } from "@/lib/generated/prisma/client";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { MediaPicker } from "@/components/admin/MediaPicker";
 import { cn } from "@/lib/utils";
 
 export interface EventFormProps {
@@ -17,6 +18,7 @@ export interface EventFormProps {
   event?: Event | null;
   /** Selectable categories — active ones, plus the event's own category if it's since been deactivated. */
   categories: EventCategory[];
+  media: Media[];
 }
 
 interface FieldProps {
@@ -58,7 +60,7 @@ const selectClassName = cn(
 const initialState = { status: "idle", message: "" } as const;
 
 /** One form, reused for both creating and editing an Event. */
-export function EventForm({ event = null, categories }: EventFormProps) {
+export function EventForm({ event = null, categories, media }: EventFormProps) {
   const action = event ? updateEvent : createEvent;
   const [state, formAction, isPending] = useActionState(action, initialState);
 
@@ -112,6 +114,10 @@ export function EventForm({ event = null, categories }: EventFormProps) {
               className="min-h-40"
               defaultValue={event?.description ?? ""}
             />
+          </Field>
+
+          <Field label="Featured Image" htmlFor="featuredImageId" hint="Optional — pick an existing Media item.">
+            <MediaPicker name="featuredImageId" media={media} defaultValue={event?.featuredImageId ?? null} />
           </Field>
 
           <Field label="Category" htmlFor="categoryId" required>
