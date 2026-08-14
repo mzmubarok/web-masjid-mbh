@@ -127,6 +127,20 @@ export function ContactLocationForm({ location }: ContactLocationFormProps) {
           <Field label="Google Maps URL" htmlFor="googleMapsUrl" hint="Optional.">
             <Input id="googleMapsUrl" name="googleMapsUrl" type="url" autoComplete="off" defaultValue={location?.googleMapsUrl ?? ""} />
           </Field>
+
+          <Field
+            label="Google Maps Embed URL"
+            htmlFor="googleMapsEmbedUrl"
+            hint="Optional — shown as an interactive map on the homepage. From Google Maps: Share → Embed a map → copy the src URL (starts with https://www.google.com/maps/embed)."
+          >
+            <Input
+              id="googleMapsEmbedUrl"
+              name="googleMapsEmbedUrl"
+              type="url"
+              autoComplete="off"
+              defaultValue={location?.googleMapsEmbedUrl ?? ""}
+            />
+          </Field>
         </CardContent>
       </Card>
 

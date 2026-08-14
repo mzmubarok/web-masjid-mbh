@@ -11,6 +11,7 @@ export interface ContactLocationActionState {
 
 const DECIMAL_PATTERN = /^-?\d+(\.\d+)?$/;
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
+const GOOGLE_MAPS_EMBED_PREFIX = "https://www.google.com/maps/embed";
 
 function readOptionalString(formData: FormData, key: string): string | null {
   const value = formData.get(key);
@@ -43,6 +44,7 @@ interface ParsedContactLocationInput {
   latitude: string | null;
   longitude: string | null;
   googleMapsUrl: string | null;
+  googleMapsEmbedUrl: string | null;
   phone: string | null;
   whatsapp: string | null;
   email: string | null;
@@ -116,6 +118,11 @@ function parseContactLocationForm(formData: FormData): ParsedContactLocationInpu
     }
   }
 
+  const googleMapsEmbedUrl = readOptionalString(formData, "googleMapsEmbedUrl");
+  if (googleMapsEmbedUrl && !googleMapsEmbedUrl.startsWith(GOOGLE_MAPS_EMBED_PREFIX)) {
+    return { error: `Google Maps Embed URL must start with ${GOOGLE_MAPS_EMBED_PREFIX}.` };
+  }
+
   return {
     mosqueName,
     shortDescription: readOptionalString(formData, "shortDescription"),
@@ -127,6 +134,7 @@ function parseContactLocationForm(formData: FormData): ParsedContactLocationInpu
     latitude,
     longitude,
     googleMapsUrl: readOptionalString(formData, "googleMapsUrl"),
+    googleMapsEmbedUrl,
     phone: readOptionalString(formData, "phone"),
     whatsapp: readOptionalString(formData, "whatsapp"),
     email: readOptionalString(formData, "email"),

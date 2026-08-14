@@ -27,11 +27,33 @@ function isUniqueConstraintError(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
+/** Confirms an optional embed URL is a well-formed URL whose host is (or is a subdomain of) `expectedHost`. `null` is always valid — the field is optional. */
+function validateEmbedUrlHost(value: string | null, expectedHost: string, label: string): string | { error: string } | null {
+  if (!value) {
+    return null;
+  }
+
+  let hostname: string;
+  try {
+    hostname = new URL(value).hostname;
+  } catch {
+    return { error: `${label} must be a valid URL.` };
+  }
+
+  if (hostname !== expectedHost && !hostname.endsWith(`.${expectedHost}`)) {
+    return { error: `${label} must be a valid ${expectedHost} URL.` };
+  }
+
+  return value;
+}
+
 interface ParsedSocialMediaInput {
   platform: string;
   url: string;
   iconId: string | null;
   displayOrder: number;
+  instagramEmbedUrl: string | null;
+  tiktokEmbedUrl: string | null;
 }
 
 function parseSocialMediaForm(formData: FormData): ParsedSocialMediaInput | { error: string } {
@@ -56,11 +78,31 @@ function parseSocialMediaForm(formData: FormData): ParsedSocialMediaInput | { er
     return { error: "Display Order must be a valid integer." };
   }
 
+  const instagramEmbedUrl = validateEmbedUrlHost(
+    readOptionalString(formData, "instagramEmbedUrl"),
+    "instagram.com",
+    "Instagram Embed URL"
+  );
+  if (instagramEmbedUrl !== null && typeof instagramEmbedUrl !== "string") {
+    return instagramEmbedUrl;
+  }
+
+  const tiktokEmbedUrl = validateEmbedUrlHost(
+    readOptionalString(formData, "tiktokEmbedUrl"),
+    "tiktok.com",
+    "TikTok Embed URL"
+  );
+  if (tiktokEmbedUrl !== null && typeof tiktokEmbedUrl !== "string") {
+    return tiktokEmbedUrl;
+  }
+
   return {
     platform,
     url,
     iconId: readOptionalString(formData, "iconId"),
     displayOrder,
+    instagramEmbedUrl,
+    tiktokEmbedUrl,
   };
 }
 
@@ -106,6 +148,8 @@ export async function createSocialMedia(
         url: parsed.url,
         iconId: parsed.iconId,
         displayOrder: parsed.displayOrder,
+        instagramEmbedUrl: parsed.instagramEmbedUrl,
+        tiktokEmbedUrl: parsed.tiktokEmbedUrl,
         isActive: true,
       },
     });
@@ -170,6 +214,8 @@ export async function updateSocialMedia(
         url: parsed.url,
         iconId: parsed.iconId,
         displayOrder: parsed.displayOrder,
+        instagramEmbedUrl: parsed.instagramEmbedUrl,
+        tiktokEmbedUrl: parsed.tiktokEmbedUrl,
       },
     });
   } catch (error) {

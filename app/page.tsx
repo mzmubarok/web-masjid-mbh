@@ -232,17 +232,32 @@ export default async function Home() {
               : undefined
           }
         />
-        <SocialMedia />
+        <SocialMedia
+          // Reuses the same `socialLinks` already fetched for Footer — no
+          // second query. Instagram/TikTok are matched by platform name,
+          // same case-insensitive convention Footer's socialPlatformIcon
+          // already uses. Only the embed URLs cross the boundary (plain
+          // strings); `platforms`' own hardcoded copy is untouched, per
+          // this task's scope. Omitted (undefined) keeps the existing
+          // placeholder preview grid exactly as before.
+          instagramEmbedUrl={
+            socialLinks.find((link) => link.platform.toLowerCase().includes("instagram"))?.instagramEmbedUrl ??
+            undefined
+          }
+          tiktokEmbedUrl={
+            socialLinks.find((link) => link.platform.toLowerCase().includes("tiktok"))?.tiktokEmbedUrl ?? undefined
+          }
+        />
         <Location
           // Only plain strings/objects cross into the Client Component —
           // never the ContactLocation record itself; icons stay
           // presentation-only, resolved inside Location.tsx by label (see
           // its DETAIL_ICON_BY_LABEL note), matching Footer's precedent.
           // Omitted (undefined) falls back to Location's own existing
-          // hardcoded defaults, unchanged. `title`/`eyebrow` and the map
-          // embed/Directions URL are intentionally left untouched — no
-          // matching CMS field exists for the section's own heading, and
-          // the map embed/Directions URL are out of scope for this task.
+          // hardcoded defaults, unchanged. `title`/`eyebrow` and the
+          // Directions URL are intentionally left untouched — no matching
+          // CMS field exists for the section's own heading, and Directions
+          // URL is out of scope for this task.
           mosqueName={contactLocation?.mosqueName ?? undefined}
           subtitle={contactLocation?.shortDescription ?? undefined}
           details={
@@ -276,6 +291,7 @@ export default async function Home() {
                 ]
               : undefined
           }
+          mapEmbedSrc={contactLocation?.googleMapsEmbedUrl ?? undefined}
           googleMapsHref={contactLocation?.googleMapsUrl ?? undefined}
         />
       </main>

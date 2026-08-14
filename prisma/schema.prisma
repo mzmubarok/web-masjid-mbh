@@ -164,6 +164,12 @@ model ContactLocation {
   longitude     Decimal?
   googleMapsUrl String?
 
+  // Interactive embed — from Google Maps' own "Share → Embed a map" flow.
+  // Deliberately separate from `googleMapsUrl` above: that one is a normal
+  // link for the "Buka di Google Maps" button, this one is only ever used
+  // as an <iframe> src and is validated to actually be an embed URL.
+  googleMapsEmbedUrl String?
+
   // Contact Information
   phone    String?
   whatsapp String?
@@ -196,6 +202,13 @@ model SocialMedia {
   icon         Media?  @relation(fields: [iconId], references: [id])
   displayOrder Int
   isActive     Boolean
+
+  // Interactive post/reel embed URLs — distinct from `url` above (the
+  // profile link). Only meaningful on the row whose `platform` matches;
+  // e.g. `instagramEmbedUrl` is read only from the row where
+  // platform = "Instagram". Never HTML, only a URL used as an <iframe> src.
+  instagramEmbedUrl String?
+  tiktokEmbedUrl    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

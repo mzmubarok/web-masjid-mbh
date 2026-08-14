@@ -60,9 +60,30 @@ export interface SocialMediaProps {
   description?: string;
   /** The two featured platform cards — a prop, so real accounts/data can be swapped in later. */
   platforms?: SocialPlatform[];
+  /**
+   * Interactive post/reel embed URLs, matched to a platform by its `name`
+   * ("Instagram"/"TikTok") — kept separate from `platforms` so the rest of
+   * each card's hardcoded copy never has to be duplicated just to add an
+   * embed. Omit to keep the existing placeholder preview grid exactly as
+   * today; the same container swaps to a live `<iframe>` the moment a URL
+   * is provided, no other change needed.
+   */
+  instagramEmbedUrl?: string;
+  tiktokEmbedUrl?: string;
   /** Anchor id — no Navbar link points here yet, kept for consistency with other sections. */
   id?: string;
   className?: string;
+}
+
+/** Matches a platform card to its embed URL by name — the only two platforms this teaser ever shows by default. */
+function embedUrlForPlatform(
+  platformName: string,
+  instagramEmbedUrl: string | undefined,
+  tiktokEmbedUrl: string | undefined
+): string | undefined {
+  if (platformName === "Instagram") return instagramEmbedUrl;
+  if (platformName === "TikTok") return tiktokEmbedUrl;
+  return undefined;
 }
 
 /**
@@ -78,6 +99,8 @@ export function SocialMedia({
   title = "Ikuti Aktivitas Kami",
   description = "Stay connected with the latest activities, lectures, and community updates from Masjid Baitul Hikmah Gondolayu Lor.",
   platforms = DEFAULT_PLATFORMS,
+  instagramEmbedUrl,
+  tiktokEmbedUrl,
   id = "media-sosial",
   className,
 }: SocialMediaProps) {
@@ -94,7 +117,10 @@ export function SocialMedia({
             variants={staggerChildren(0.1)}
           >
             <Grid cols={2}>
-              {platforms.map((platform) => (
+              {platforms.map((platform) => {
+                const embedUrl = embedUrlForPlatform(platform.name, instagramEmbedUrl, tiktokEmbedUrl);
+
+                return (
                 <motion.div key={platform.name} variants={fadeUp}>
                   <Card interactive className="h-full">
                     <Stack gap="md">
@@ -111,41 +137,58 @@ export function SocialMedia({
                         <CardDescription className="pt-1">{platform.description}</CardDescription>
                       </CardHeader>
 
-                      <div
-                        className={cn(
-                          "grid gap-2",
-                          platform.previewAspect === "square" ? "grid-cols-3" : "grid-cols-4"
-                        )}
-                      >
-                        {platform.previews.map((preview, index) => (
-                          <div
-                            key={index}
-                            className={cn(
-                              "relative overflow-hidden rounded-md bg-muted",
-                              platform.previewAspect === "square" ? "aspect-square" : "aspect-[9/16]"
-                            )}
-                          >
-                            {preview.imageSrc ? (
-                              <Image
-                                src={preview.imageSrc}
-                                alt={preview.imageAlt ?? ""}
-                                fill
-                                loading="lazy"
-                                sizes="160px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/50">
-                                {platform.previewAspect === "square" ? (
-                                  <ImageIcon className="size-5" aria-hidden />
-                                ) : (
-                                  <Play className="size-5" aria-hidden />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      {embedUrl ? (
+                        <div
+                          className={cn(
+                            "relative w-full overflow-hidden rounded-md bg-muted",
+                            platform.previewAspect === "square" ? "aspect-square" : "aspect-[9/16]"
+                          )}
+                        >
+                          <iframe
+                            src={embedUrl}
+                            title={`${platform.name} embed`}
+                            loading="lazy"
+                            className="absolute inset-0 size-full border-0"
+                            allowFullScreen
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className={cn(
+                            "grid gap-2",
+                            platform.previewAspect === "square" ? "grid-cols-3" : "grid-cols-4"
+                          )}
+                        >
+                          {platform.previews.map((preview, index) => (
+                            <div
+                              key={index}
+                              className={cn(
+                                "relative overflow-hidden rounded-md bg-muted",
+                                platform.previewAspect === "square" ? "aspect-square" : "aspect-[9/16]"
+                              )}
+                            >
+                              {preview.imageSrc ? (
+                                <Image
+                                  src={preview.imageSrc}
+                                  alt={preview.imageAlt ?? ""}
+                                  fill
+                                  loading="lazy"
+                                  sizes="160px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/50">
+                                  {platform.previewAspect === "square" ? (
+                                    <ImageIcon className="size-5" aria-hidden />
+                                  ) : (
+                                    <Play className="size-5" aria-hidden />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       <a
                         href={platform.href}
@@ -158,7 +201,8 @@ export function SocialMedia({
                     </Stack>
                   </Card>
                 </motion.div>
-              ))}
+                );
+              })}
             </Grid>
           </motion.div>
         </Stack>
