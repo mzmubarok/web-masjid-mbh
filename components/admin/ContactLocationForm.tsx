@@ -179,11 +179,29 @@ export function ContactLocationForm({ location }: ContactLocationFormProps) {
           <CardTitle>Facilities</CardTitle>
           <CardDescription>Amenities available at the mosque.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
+          <Field label="Parking Description" htmlFor="parkingDescription" hint="Optional. Shown on the homepage's Visit Us section.">
+            <Textarea
+              id="parkingDescription"
+              name="parkingDescription"
+              defaultValue={location?.parkingDescription ?? ""}
+            />
+          </Field>
+
+          <Field
+            label="Accessibility Description"
+            htmlFor="accessibilityDescription"
+            hint="Optional. Shown on the homepage's Visit Us section."
+          >
+            <Textarea
+              id="accessibilityDescription"
+              name="accessibilityDescription"
+              defaultValue={location?.accessibilityDescription ?? ""}
+            />
+          </Field>
+
           {(
             [
-              ["parking", "Parking"],
-              ["accessibility", "Accessibility"],
               ["ablutionArea", "Ablution Area"],
               ["restroom", "Restroom"],
             ] as const

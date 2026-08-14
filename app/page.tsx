@@ -24,7 +24,7 @@ import { getHomepageFinancialSummaries } from "@/lib/finance/financial-reports";
 import { formatFinancialAmount, formatReportPeriod } from "@/lib/finance/format-finance";
 import { getFeaturedDonationProgram } from "@/lib/donations/donation-programs";
 import { getContactLocation } from "@/lib/contact/contact-location";
-import { toWhatsAppHref } from "@/lib/contact/format-contact";
+import { toWhatsAppHref, formatOperatingHours } from "@/lib/contact/format-contact";
 import { getActiveSocialMediaLinks } from "@/lib/social-media/social-media";
 import { getSiteSettings } from "@/lib/settings/site-settings";
 import { parseDateOnly } from "@/lib/date";
@@ -233,7 +233,51 @@ export default async function Home() {
           }
         />
         <SocialMedia />
-        <Location />
+        <Location
+          // Only plain strings/objects cross into the Client Component —
+          // never the ContactLocation record itself; icons stay
+          // presentation-only, resolved inside Location.tsx by label (see
+          // its DETAIL_ICON_BY_LABEL note), matching Footer's precedent.
+          // Omitted (undefined) falls back to Location's own existing
+          // hardcoded defaults, unchanged. `title`/`eyebrow` and the map
+          // embed/Directions URL are intentionally left untouched — no
+          // matching CMS field exists for the section's own heading, and
+          // the map embed/Directions URL are out of scope for this task.
+          mosqueName={contactLocation?.mosqueName ?? undefined}
+          subtitle={contactLocation?.shortDescription ?? undefined}
+          details={
+            contactLocation
+              ? [
+                  { label: "Alamat", value: `${contactLocation.address}, ${contactLocation.city}` },
+                  {
+                    label: "Jam Operasional",
+                    value: formatOperatingHours(
+                      contactLocation.openingTime,
+                      contactLocation.closingTime,
+                      contactLocation.operatingNotes
+                    ),
+                  },
+                  {
+                    label: "Parkir",
+                    // Same hardcoded sentence Location.tsx's own default
+                    // uses — the CMS field is optional, so an admin who
+                    // hasn't filled it in yet sees the same fallback text
+                    // as before, not a blank row.
+                    value:
+                      contactLocation.parkingDescription ??
+                      "Tersedia area parkir motor dan mobil di halaman masjid",
+                  },
+                  {
+                    label: "Aksesibilitas",
+                    value:
+                      contactLocation.accessibilityDescription ??
+                      "Akses ramah kursi roda tersedia melalui pintu utama",
+                  },
+                ]
+              : undefined
+          }
+          googleMapsHref={contactLocation?.googleMapsUrl ?? undefined}
+        />
       </main>
       <Footer
         // Only plain strings/objects cross into Footer — icons stay

@@ -175,10 +175,10 @@ model ContactLocation {
   operatingNotes String?
 
   // Facilities
-  parking       Boolean
-  accessibility Boolean
-  ablutionArea  Boolean
-  restroom      Boolean
+  parkingDescription       String?
+  accessibilityDescription String?
+  ablutionArea             Boolean
+  restroom                 Boolean
 
   // Visitor Information
   navigationTitle String?

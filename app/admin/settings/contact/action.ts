@@ -49,8 +49,8 @@ interface ParsedContactLocationInput {
   openingTime: string;
   closingTime: string;
   operatingNotes: string | null;
-  parking: boolean;
-  accessibility: boolean;
+  parkingDescription: string | null;
+  accessibilityDescription: string | null;
   ablutionArea: boolean;
   restroom: boolean;
   navigationTitle: string | null;
@@ -133,8 +133,8 @@ function parseContactLocationForm(formData: FormData): ParsedContactLocationInpu
     openingTime,
     closingTime,
     operatingNotes: readOptionalString(formData, "operatingNotes"),
-    parking: formData.get("parking") !== null,
-    accessibility: formData.get("accessibility") !== null,
+    parkingDescription: readOptionalString(formData, "parkingDescription"),
+    accessibilityDescription: readOptionalString(formData, "accessibilityDescription"),
     ablutionArea: formData.get("ablutionArea") !== null,
     restroom: formData.get("restroom") !== null,
     navigationTitle: readOptionalString(formData, "navigationTitle"),

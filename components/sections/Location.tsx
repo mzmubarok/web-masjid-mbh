@@ -14,29 +14,35 @@ import { cn } from "@/lib/utils";
 export interface LocationDetail {
   label: string;
   value: string;
-  icon: ComponentType<{ className?: string }>;
 }
+
+// ContactLocation (CMS) has no per-detail icon field — icon selection stays
+// presentation-only, resolved by label, same reasoning as Footer's
+// CONTACT_ICON_BY_LABEL. The four labels below are structural (always the
+// same four rows), so matching by label is safe regardless of CMS content.
+const DETAIL_ICON_BY_LABEL: Record<string, ComponentType<{ className?: string }>> = {
+  Alamat: MapPin,
+  "Jam Operasional": Clock3,
+  Parkir: Car,
+  Aksesibilitas: Accessibility,
+};
 
 const DEFAULT_DETAILS: LocationDetail[] = [
   {
     label: "Alamat",
     value: "Jl. Gondolayu Lor, Yogyakarta, Daerah Istimewa Yogyakarta",
-    icon: MapPin,
   },
   {
     label: "Jam Operasional",
     value: "Setiap hari, 04.00 – 21.00 WIB",
-    icon: Clock3,
   },
   {
     label: "Parkir",
     value: "Tersedia area parkir motor dan mobil di halaman masjid",
-    icon: Car,
   },
   {
     label: "Aksesibilitas",
     value: "Akses ramah kursi roda tersedia melalui pintu utama",
-    icon: Accessibility,
   },
 ];
 
@@ -121,17 +127,20 @@ export function Location({
 
                 <motion.div variants={fadeUp}>
                   <Stack gap="md">
-                    {details.map((detail) => (
-                      <div key={detail.label} className="flex items-start gap-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <detail.icon className="size-4" aria-hidden />
+                    {details.map((detail) => {
+                      const Icon = DETAIL_ICON_BY_LABEL[detail.label] ?? MapPin;
+                      return (
+                        <div key={detail.label} className="flex items-start gap-3">
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <Icon className="size-4" aria-hidden />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-label text-muted-foreground">{detail.label}</span>
+                            <span className="text-body text-text">{detail.value}</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-label text-muted-foreground">{detail.label}</span>
-                          <span className="text-body text-text">{detail.value}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </Stack>
                 </motion.div>
 
