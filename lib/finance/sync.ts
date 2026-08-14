@@ -8,7 +8,12 @@ const SYNC_DATA_SOURCE = "spreadsheet";
 
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
-const DECIMAL_PATTERN = /^-?\d+(\.\d+)?$/;
+// Digits only, once every non-numeric formatting artifact (currency
+// prefix, spaces, thousands separators) has been stripped by
+// parseFinancialNumber below — no decimal point. Rupiah amounts have no
+// meaningful sub-unit, and every accepted input format agrees on treating
+// both "." and "," as thousands separators, never a decimal point.
+const FINANCIAL_NUMBER_PATTERN = /^-?\d+$/;
 
 // The spreadsheet (specifically its Public_Data worksheet — see
 // docs/financial-sync.md §7) now does all calculation/aggregation itself
@@ -67,21 +72,52 @@ function findMissingColumns(rows: Record<string, string>[]): string[] {
   return REQUIRED_COLUMNS.filter((column) => !present.has(column));
 }
 
-type DecimalCellResult = { value: string } | { error: "empty" | "invalid" };
+type FinancialNumberResult = { value: string } | { error: "empty" | "invalid" };
 
 /**
- * Accepts plain digits with an optional decimal point and thousands commas
- * ("50,000,000" or "50000000") — not currency-symbol or Indonesian
- * dot-thousands formatting, since the spreadsheet already exports clean
- * numbers, not display strings.
+ * The one place every financial column (total_fund, monthly_income,
+ * monthly_expense, current_balance) gets parsed — so a treasurer can enter
+ * a value in whatever natural format they're used to, without worrying
+ * about matching a strict machine format:
+ *
+ *   1000000, 1.000.000, Rp1.000.000, Rp 1.000.000, rp1.000.000,
+ *   1,000,000, 1 000 000   →   all become "1000000"
+ *
+ * Steps: trim → strip any "Rp" (case-insensitive) → strip spaces → strip
+ * "." and "," (always thousands separators here, never a decimal point —
+ * see FINANCIAL_NUMBER_PATTERN above) → what's left must be digits only.
+ *
+ * Deliberately doesn't just hand the cleaned string to `Number()` and
+ * check `isFinite` on its own — JS's string-to-number coercion is looser
+ * than that (`Number("1e10")` and `Number("0x10")` are both "finite
+ * numbers", and `Number("")` is `0`, not an error) and would silently
+ * accept scientific notation, hex, or a blank-after-stripping cell like a
+ * lone "Rp" as a valid figure. The digits-only regex is what actually
+ * keeps this strict; `Number()` + `isFinite` only run after it already
+ * passed, as the final, defensive check the spec asks for.
  */
-function parseDecimalCell(raw: string | undefined): DecimalCellResult {
-  const cleaned = (raw ?? "").replace(/,/g, "").trim();
-  if (cleaned === "") return { error: "empty" };
-  return DECIMAL_PATTERN.test(cleaned) ? { value: cleaned } : { error: "invalid" };
+function parseFinancialNumber(raw: string | undefined): FinancialNumberResult {
+  const trimmed = (raw ?? "").trim();
+  if (trimmed === "") return { error: "empty" };
+
+  const cleaned = trimmed
+    .replace(/rp/gi, "")
+    .replace(/\s+/g, "")
+    .replace(/[.,]/g, "");
+
+  if (!FINANCIAL_NUMBER_PATTERN.test(cleaned)) {
+    return { error: "invalid" };
+  }
+
+  const numeric = Number(cleaned);
+  if (!Number.isFinite(numeric)) {
+    return { error: "invalid" };
+  }
+
+  return { value: cleaned };
 }
 
-function decimalFieldError(result: { error: "empty" | "invalid" }, fieldName: string): string {
+function financialNumberFieldError(result: { error: "empty" | "invalid" }, fieldName: string): string {
   return result.error === "empty" ? `${fieldName} is empty.` : `${fieldName} must be a valid number.`;
 }
 
@@ -136,24 +172,24 @@ function parseAndValidateRow(
     return { error: `report_year must be an integer between ${MIN_YEAR} and ${MAX_YEAR}.` };
   }
 
-  const totalFund = parseDecimalCell(row.total_fund);
+  const totalFund = parseFinancialNumber(row.total_fund);
   if ("error" in totalFund) {
-    return { error: decimalFieldError(totalFund, "total_fund") };
+    return { error: financialNumberFieldError(totalFund, "total_fund") };
   }
 
-  const monthlyIncome = parseDecimalCell(row.monthly_income);
+  const monthlyIncome = parseFinancialNumber(row.monthly_income);
   if ("error" in monthlyIncome) {
-    return { error: decimalFieldError(monthlyIncome, "monthly_income") };
+    return { error: financialNumberFieldError(monthlyIncome, "monthly_income") };
   }
 
-  const monthlyExpense = parseDecimalCell(row.monthly_expense);
+  const monthlyExpense = parseFinancialNumber(row.monthly_expense);
   if ("error" in monthlyExpense) {
-    return { error: decimalFieldError(monthlyExpense, "monthly_expense") };
+    return { error: financialNumberFieldError(monthlyExpense, "monthly_expense") };
   }
 
-  const currentBalance = parseDecimalCell(row.current_balance);
+  const currentBalance = parseFinancialNumber(row.current_balance);
   if ("error" in currentBalance) {
-    return { error: decimalFieldError(currentBalance, "current_balance") };
+    return { error: financialNumberFieldError(currentBalance, "current_balance") };
   }
 
   return {
