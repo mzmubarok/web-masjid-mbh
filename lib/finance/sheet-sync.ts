@@ -18,8 +18,27 @@ export interface FinancialSheetSyncResult {
   created: number;
   updated: number;
   skipped: FinancialSheetSyncSkippedRow[];
-  /** Set when the sync couldn't run at all (missing config, network/HTTP failure) — `created`/`updated`/`skipped` are all 0 in that case. */
+  /** Set when the sync couldn't run at all (missing config, network/HTTP failure, missing column) — `created`/`updated`/`skipped` are all 0 in that case. */
   fetchError?: string;
+  /** The most recent (month, year) among the rows this run actually created or updated — omitted when nothing was written (e.g. every row was skipped). */
+  latestPeriod?: { month: number; year: number };
+}
+
+const REQUIRED_COLUMNS = [
+  "program_slug",
+  "report_month",
+  "report_year",
+  "total_fund",
+  "monthly_income",
+  "monthly_expense",
+  "current_balance",
+] as const;
+
+/** Which required columns are absent from the sheet's header row — a missing column affects every row, so this is checked once up front rather than per row. */
+function findMissingColumns(rows: Record<string, string>[]): string[] {
+  if (rows.length === 0) return [];
+  const presentColumns = new Set(Object.keys(rows[0]));
+  return REQUIRED_COLUMNS.filter((column) => !presentColumns.has(column));
 }
 
 /**
@@ -98,10 +117,24 @@ function parseCsv(text: string): Record<string, string>[] {
     .map((row) => Object.fromEntries(header.map((key, index) => [key, (row[index] ?? "").trim()])));
 }
 
-/** Accepts plain digits with an optional decimal point and thousands commas ("50,000,000" or "50000000") — not currency-symbol or Indonesian dot-thousands formatting, since this column is meant for clean data entry, not display. */
-function parseDecimalCell(raw: string | undefined): string | null {
+type DecimalCellResult = { value: string } | { error: "empty" | "invalid" };
+
+/**
+ * Accepts plain digits with an optional decimal point and thousands commas
+ * ("50,000,000" or "50000000") — not currency-symbol or Indonesian
+ * dot-thousands formatting, since this column is meant for clean data
+ * entry, not display. Distinguishes a blank cell from a malformed one so
+ * the validation message can say which ("X is empty" vs "X must be a
+ * valid number") instead of treating both the same way.
+ */
+function parseDecimalCell(raw: string | undefined): DecimalCellResult {
   const cleaned = (raw ?? "").replace(/,/g, "").trim();
-  return DECIMAL_PATTERN.test(cleaned) ? cleaned : null;
+  if (cleaned === "") return { error: "empty" };
+  return DECIMAL_PATTERN.test(cleaned) ? { value: cleaned } : { error: "invalid" };
+}
+
+function decimalFieldError(result: { error: "empty" | "invalid" }, fieldName: string): string {
+  return result.error === "empty" ? `${fieldName} is empty.` : `${fieldName} must be a valid number.`;
 }
 
 interface ParsedSheetRow {
@@ -121,52 +154,60 @@ function parseSheetRow(
 ): ParsedSheetRow | { error: string } {
   const slug = row.program_slug;
   if (!slug) {
-    return { error: "Missing program_slug." };
+    return { error: "program_slug is empty." };
   }
 
   const program = programBySlug.get(slug);
   if (!program) {
-    return { error: `No financial program found with slug "${slug}".` };
+    return { error: `program_slug "${slug}" does not match any financial program.` };
   }
 
-  const reportMonth = Number(row.report_month);
+  const reportMonthRaw = row.report_month?.trim();
+  if (!reportMonthRaw) {
+    return { error: "report_month is empty." };
+  }
+  const reportMonth = Number(reportMonthRaw);
   if (!Number.isInteger(reportMonth) || reportMonth < 1 || reportMonth > 12) {
-    return { error: `report_month must be 1-12, got "${row.report_month}".` };
+    return { error: "report_month must be between 1 and 12." };
   }
 
-  const reportYear = Number(row.report_year);
+  const reportYearRaw = row.report_year?.trim();
+  if (!reportYearRaw) {
+    return { error: "report_year is empty." };
+  }
+  const reportYear = Number(reportYearRaw);
   if (!Number.isInteger(reportYear) || reportYear < MIN_YEAR || reportYear > MAX_YEAR) {
-    return { error: `report_year must be between ${MIN_YEAR} and ${MAX_YEAR}, got "${row.report_year}".` };
+    return { error: `report_year must be between ${MIN_YEAR} and ${MAX_YEAR}.` };
   }
 
   const totalFund = parseDecimalCell(row.total_fund);
-  if (!totalFund) {
-    return { error: `total_fund is not a valid number: "${row.total_fund}".` };
+  if ("error" in totalFund) {
+    return { error: decimalFieldError(totalFund, "total_fund") };
   }
 
   const monthlyIncome = parseDecimalCell(row.monthly_income);
-  if (!monthlyIncome) {
-    return { error: `monthly_income is not a valid number: "${row.monthly_income}".` };
+  if ("error" in monthlyIncome) {
+    return { error: decimalFieldError(monthlyIncome, "monthly_income") };
   }
 
   const monthlyExpense = parseDecimalCell(row.monthly_expense);
-  if (!monthlyExpense) {
-    return { error: `monthly_expense is not a valid number: "${row.monthly_expense}".` };
+  if ("error" in monthlyExpense) {
+    return { error: decimalFieldError(monthlyExpense, "monthly_expense") };
   }
 
   const currentBalance = parseDecimalCell(row.current_balance);
-  if (!currentBalance) {
-    return { error: `current_balance is not a valid number: "${row.current_balance}".` };
+  if ("error" in currentBalance) {
+    return { error: decimalFieldError(currentBalance, "current_balance") };
   }
 
   return {
     programId: program.id,
     reportMonth,
     reportYear,
-    totalFund,
-    monthlyIncome,
-    monthlyExpense,
-    currentBalance,
+    totalFund: totalFund.value,
+    monthlyIncome: monthlyIncome.value,
+    monthlyExpense: monthlyExpense.value,
+    currentBalance: currentBalance.value,
     notes: row.notes || null,
   };
 }
@@ -196,7 +237,12 @@ function parseSheetRow(
 export async function syncFinancialReportsFromSheet(actorUserId: string): Promise<FinancialSheetSyncResult> {
   const csvUrl = process.env.FINANCE_SHEET_CSV_URL;
   if (!csvUrl) {
-    return { created: 0, updated: 0, skipped: [], fetchError: "FINANCE_SHEET_CSV_URL is not configured." };
+    return {
+      created: 0,
+      updated: 0,
+      skipped: [],
+      fetchError: "Spreadsheet sync is not set up yet. Please ask a developer to connect the Google Sheet.",
+    };
   }
 
   let csvText: string;
@@ -206,11 +252,13 @@ export async function syncFinancialReportsFromSheet(actorUserId: string): Promis
     // Next.js fetch cache should sit in between.
     const response = await fetch(csvUrl, { cache: "no-store" });
     if (!response.ok) {
+      console.error(`Financial sheet sync: spreadsheet request failed with status ${response.status}.`);
       return {
         created: 0,
         updated: 0,
         skipped: [],
-        fetchError: `Spreadsheet request failed with status ${response.status}.`,
+        fetchError:
+          "Could not download the spreadsheet. Please check that it's still published and publicly accessible.",
       };
     }
     csvText = await response.text();
@@ -220,17 +268,36 @@ export async function syncFinancialReportsFromSheet(actorUserId: string): Promis
       created: 0,
       updated: 0,
       skipped: [],
-      fetchError: "Could not reach the spreadsheet. Check FINANCE_SHEET_CSV_URL and network access.",
+      fetchError: "Could not reach the spreadsheet. Please check that the Google Sheets link is still valid.",
     };
   }
 
   const rows = parseCsv(csvText);
+
+  const missingColumns = findMissingColumns(rows);
+  if (missingColumns.length > 0) {
+    return {
+      created: 0,
+      updated: 0,
+      skipped: [],
+      fetchError: `Missing required column${missingColumns.length > 1 ? "s" : ""}: ${missingColumns.join(", ")}.`,
+    };
+  }
+
   const programs = await prisma.financialProgram.findMany({ select: { id: true, slug: true } });
   const programBySlug = new Map(programs.map((program) => [program.slug, program]));
 
   let created = 0;
   let updated = 0;
   const skipped: FinancialSheetSyncSkippedRow[] = [];
+  let latestPeriod: { month: number; year: number } | undefined;
+
+  /** Tracks the most recent period actually written, for the "Latest Report Period" summary — no separate pass over the rows, just compared alongside the existing upsert loop. */
+  function noteWrittenPeriod(reportMonth: number, reportYear: number): void {
+    if (!latestPeriod || reportYear > latestPeriod.year || (reportYear === latestPeriod.year && reportMonth > latestPeriod.month)) {
+      latestPeriod = { month: reportMonth, year: reportYear };
+    }
+  }
 
   // Sequential, not parallel — each row upserts against the same
   // (programId, reportMonth, reportYear) unique key its neighbors could
@@ -271,6 +338,7 @@ export async function syncFinancialReportsFromSheet(actorUserId: string): Promis
         },
       });
       updated++;
+      noteWrittenPeriod(parsed.reportMonth, parsed.reportYear);
     } else {
       await prisma.financialReport.create({
         data: {
@@ -290,6 +358,7 @@ export async function syncFinancialReportsFromSheet(actorUserId: string): Promis
         },
       });
       created++;
+      noteWrittenPeriod(parsed.reportMonth, parsed.reportYear);
     }
   }
 
@@ -297,5 +366,5 @@ export async function syncFinancialReportsFromSheet(actorUserId: string): Promis
     console.error("Financial report spreadsheet sync skipped rows:", skipped);
   }
 
-  return { created, updated, skipped };
+  return { created, updated, skipped, latestPeriod };
 }

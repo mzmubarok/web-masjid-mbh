@@ -487,6 +487,27 @@ model FinancialReport {
   @@index([publishedAt])
 }
 
+// One row per spreadsheet sync attempt (manual button or the daily cron) —
+// gives admins visibility into when the last sync ran, whether it
+// succeeded, and how many rows it touched, without checking server logs. A
+// "running" row with no `finishedAt` yet also doubles as the simple lock
+// that stops two syncs from executing at once (see
+// lib/finance/sync-monitoring.ts) — no separate queue/lock table needed.
+model FinancialSyncRun {
+  id           String    @id @default(cuid())
+  status       String // "running" | "success" | "error"
+  triggeredBy  String // "manual" | "cron"
+  created      Int       @default(0)
+  updated      Int       @default(0)
+  skipped      Int       @default(0)
+  errorMessage String?
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+
+  @@index([startedAt])
+  @@index([status])
+}
+
 // Bank account and QRIS payment details are shared mosque-wide and live on
 // SiteSetting — a DonationProgram only describes the purpose of a donation,
 // it does not carry its own payment information.

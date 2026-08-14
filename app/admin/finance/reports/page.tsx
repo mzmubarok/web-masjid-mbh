@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { getFinancialReports } from "@/lib/finance/financial-reports";
+import { getLatestFinancialSyncRun, getFinancialSyncHistory } from "@/lib/finance/sync-monitoring";
 import { toggleFinancialReportPublished } from "@/app/admin/finance/reports/action";
 import { DeleteFinancialReportButton } from "@/components/admin/DeleteFinancialReportButton";
 import { SyncFinancialReportsButton } from "@/components/admin/SyncFinancialReportsButton";
+import { FinancialSyncPanel } from "@/components/admin/FinancialSyncPanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -26,7 +28,11 @@ const MONTH_NAMES = [
 const currencyFormatter = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
 export default async function FinancialReportsPage() {
-  const reports = await getFinancialReports();
+  const [reports, latestSyncRun, syncHistory] = await Promise.all([
+    getFinancialReports(),
+    getLatestFinancialSyncRun(),
+    getFinancialSyncHistory(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -51,6 +57,8 @@ export default async function FinancialReportsPage() {
           </Link>
         </div>
       </div>
+
+      <FinancialSyncPanel latestRun={latestSyncRun} history={syncHistory} />
 
       <div className="rounded-lg border border-border bg-card">
         {reports.length === 0 ? (
