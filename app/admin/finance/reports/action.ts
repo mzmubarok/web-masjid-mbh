@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { syncFinancialReportsFromSheet } from "@/lib/finance/sheet-sync";
 
 export interface FinancialReportActionState {
   status: "idle" | "success" | "error";
@@ -13,6 +14,11 @@ export interface FinancialReportActionState {
 
 export interface DeleteFinancialReportState {
   status: "idle" | "error";
+  message: string;
+}
+
+export interface SyncFinancialReportsState {
+  status: "idle" | "success" | "error";
   message: string;
 }
 
@@ -355,4 +361,50 @@ export async function deleteFinancialReport(
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.
   return { status: "idle", message: "" };
+}
+
+/**
+ * Manually triggers the same import a future scheduled sync will use — see
+ * `lib/finance/sheet-sync.ts` for the actual fetch/parse/upsert logic, which
+ * this action never duplicates. The signed-in admin is passed through as
+ * `actorUserId`; a future cron caller would supply its own actor instead.
+ */
+export async function syncFinancialReportsFromSheetAction(
+  // Required by useActionState's (state, formData) calling convention —
+  // this action takes no input, it's a plain trigger.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _prevState: SyncFinancialReportsState,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _formData: FormData
+): Promise<SyncFinancialReportsState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to sync financial reports." };
+  }
+
+  const result = await syncFinancialReportsFromSheet(session.user.id);
+
+  if (result.fetchError) {
+    return { status: "error", message: result.fetchError };
+  }
+
+  revalidatePath("/admin/finance/reports");
+  revalidatePath("/admin/finance");
+  // The public homepage's Financial section reads FinancialReport rows
+  // (see app/page.tsx) — same convention as every other mutating action.
+  revalidatePath("/");
+
+  const skippedSummary =
+    result.skipped.length > 0
+      ? ` ${result.skipped.length} row(s) skipped: ${result.skipped
+          .slice(0, 3)
+          .map((row) => `row ${row.row} (${row.reason})`)
+          .join("; ")}${result.skipped.length > 3 ? `; and ${result.skipped.length - 3} more` : ""}.`
+      : "";
+
+  return {
+    status: "success",
+    message: `Synced from spreadsheet: ${result.created} created, ${result.updated} updated.${skippedSummary}`,
+  };
 }

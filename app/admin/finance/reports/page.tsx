@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getFinancialReports } from "@/lib/finance/financial-reports";
 import { toggleFinancialReportPublished } from "@/app/admin/finance/reports/action";
 import { DeleteFinancialReportButton } from "@/components/admin/DeleteFinancialReportButton";
+import { SyncFinancialReportsButton } from "@/components/admin/SyncFinancialReportsButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -40,10 +41,11 @@ export default async function FinancialReportsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <Link href="/admin/finance" className={cn(buttonVariants({ variant: "outline" }))}>
             Financial Programs
           </Link>
+          <SyncFinancialReportsButton />
           <Link href="/admin/finance/reports/new" className={cn(buttonVariants({ variant: "primary" }))}>
             Create Report
           </Link>
