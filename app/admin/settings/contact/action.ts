@@ -177,6 +177,9 @@ export async function updateContactLocation(
   }
 
   revalidatePath("/admin/settings/contact");
+  // The public homepage's Footer reads address/whatsapp/email (see
+  // app/page.tsx) — same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
 
   return { status: "success", message: "Contact location updated successfully." };
 }

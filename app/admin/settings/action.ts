@@ -128,6 +128,9 @@ export async function updateSiteSettings(
   }
 
   revalidatePath("/admin/settings");
+  // The public homepage's Footer reads siteName/copyrightText/footerDescription
+  // (see app/page.tsx) — same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
 
   return { status: "success", message: "Site settings updated successfully." };
 }

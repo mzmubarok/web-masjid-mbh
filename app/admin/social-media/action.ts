@@ -118,6 +118,9 @@ export async function createSocialMedia(
   }
 
   revalidatePath("/admin/social-media");
+  // The public homepage's Footer reads active social media links (see
+  // app/page.tsx) — same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
   redirect("/admin/social-media");
 }
 
@@ -179,6 +182,7 @@ export async function updateSocialMedia(
 
   revalidatePath("/admin/social-media");
   revalidatePath(`/admin/social-media/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/social-media");
 }
 
@@ -199,6 +203,7 @@ export async function toggleSocialMediaActive(id: string, nextIsActive: boolean)
   });
 
   revalidatePath("/admin/social-media");
+  revalidatePath("/");
 }
 
 /**
@@ -235,6 +240,7 @@ export async function deleteSocialMedia(
   }
 
   revalidatePath("/admin/social-media");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.

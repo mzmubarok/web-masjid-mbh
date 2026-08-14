@@ -20,6 +20,10 @@ import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
 import { getFeaturedGalleryAlbums } from "@/lib/gallery/gallery-albums";
+import { getContactLocation } from "@/lib/contact/contact-location";
+import { toWhatsAppHref } from "@/lib/contact/format-contact";
+import { getActiveSocialMediaLinks } from "@/lib/social-media/social-media";
+import { getSiteSettings } from "@/lib/settings/site-settings";
 import { parseDateOnly } from "@/lib/date";
 import type { BadgeProps } from "@/components/ui/Badge";
 
@@ -49,13 +53,17 @@ function getTodayDateKeyInJakarta(): string {
 export default async function Home() {
   const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
 
-  const [hero, about, hijriOverride, upcomingEvents, galleryAlbums] = await Promise.all([
-    getCurrentHero(),
-    getCurrentAbout(),
-    todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
-    getUpcomingEvents(),
-    getFeaturedGalleryAlbums(),
-  ]);
+  const [hero, about, hijriOverride, upcomingEvents, galleryAlbums, contactLocation, socialLinks, siteSettings] =
+    await Promise.all([
+      getCurrentHero(),
+      getCurrentAbout(),
+      todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
+      getUpcomingEvents(),
+      getFeaturedGalleryAlbums(),
+      getContactLocation(),
+      getActiveSocialMediaLinks(),
+      getSiteSettings(),
+    ]);
 
   return (
     <PageWrapper>
@@ -154,7 +162,47 @@ export default async function Home() {
         <SocialMedia />
         <Location />
       </main>
-      <Footer />
+      <Footer
+        // Only plain strings/objects cross into Footer — icons stay
+        // presentation-only and are resolved inside Footer.tsx itself (see
+        // its FooterSocialItem/CONTACT_ICON_BY_LABEL notes), never CMS-driven,
+        // matching About's VALUE_ICONS precedent. Omitted (undefined) falls
+        // back to Footer's own existing hardcoded defaults, unchanged.
+        mosqueName={siteSettings?.siteName ?? undefined}
+        contactItems={
+          contactLocation
+            ? [
+                { label: "Alamat", value: `${contactLocation.address}, ${contactLocation.city}` },
+                ...(contactLocation.whatsapp
+                  ? [
+                      {
+                        label: "WhatsApp",
+                        value: contactLocation.whatsapp,
+                        href: toWhatsAppHref(contactLocation.whatsapp),
+                      },
+                    ]
+                  : []),
+                ...(contactLocation.email
+                  ? [{ label: "Email", value: contactLocation.email, href: `mailto:${contactLocation.email}` }]
+                  : []),
+              ]
+            : undefined
+        }
+        socialLinks={
+          socialLinks.length > 0
+            ? socialLinks.map((link) => ({ label: link.platform, href: link.url }))
+            : undefined
+        }
+        // copyrightHolder intentionally NOT wired to SiteSetting.copyrightText —
+        // see report's Architectural Findings: that field holds the full
+        // copyright line ("© 2026 Masjid. All rights reserved.", confirmed
+        // from real data), but Footer's own "© {copyrightYear} {copyrightHolder}"
+        // already prepends "©" + year, so wiring it verbatim would duplicate
+        // both. Fixing that would mean restructuring Footer's copyright line,
+        // which is out of scope ("do not redesign"). Left on its existing
+        // hardcoded default.
+        smallPrint={siteSettings?.footerDescription ?? undefined}
+      />
     </PageWrapper>
   );
 }

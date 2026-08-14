@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Image as ImageIcon, Mail, MapPin, MessageCircle, Video } from "lucide-react";
+import { Globe, Image as ImageIcon, Mail, MapPin, MessageCircle, Video } from "lucide-react";
 import { Container } from "@/components/layout/Container";
 import { Section } from "@/components/layout/Section";
 import { Stack } from "@/components/layout/Stack";
@@ -20,7 +20,33 @@ export interface FooterContactItem {
   label: string;
   value: string;
   href?: string;
-  icon: ComponentType<{ className?: string }>;
+}
+
+// SocialMedia.icon (CMS) is an uploaded Media image, not a vector icon, so it
+// can't feed SocialLinks' `icon: ReactNode` slot without swapping in a raster
+// image and changing the existing look — same reasoning as About.tsx's
+// VALUE_ICONS. Icon selection stays presentation-only, matched by label
+// instead of being CMS-driven.
+export interface FooterSocialItem {
+  label: string;
+  href: string;
+}
+
+const CONTACT_ICON_BY_LABEL: Record<string, ComponentType<{ className?: string }>> = {
+  Alamat: MapPin,
+  WhatsApp: MessageCircle,
+  Email: Mail,
+};
+
+function socialPlatformIcon(platform: string): ComponentType<{ className?: string }> {
+  const normalized = platform.toLowerCase();
+  if (normalized.includes("tiktok") || normalized.includes("youtube") || normalized.includes("video")) {
+    return Video;
+  }
+  if (normalized.includes("instagram") || normalized.includes("photo")) {
+    return ImageIcon;
+  }
+  return Globe;
 }
 
 // Kept in sync with Navbar's anchors — Prayer Times no longer has its own
@@ -37,25 +63,22 @@ const DEFAULT_CONTACT_ITEMS: FooterContactItem[] = [
   {
     label: "Alamat",
     value: "Jl. Gondolayu Lor, Yogyakarta",
-    icon: MapPin,
   },
   {
     label: "WhatsApp",
     value: "+62 812-3456-7890",
     href: "https://wa.me/6281234567890",
-    icon: MessageCircle,
   },
   {
     label: "Email",
     value: "info@masjidbaitulhikmah.or.id",
     href: "mailto:info@masjidbaitulhikmah.or.id",
-    icon: Mail,
   },
 ];
 
-const DEFAULT_SOCIAL_LINKS: SocialLink[] = [
-  { label: "Instagram", href: "https://instagram.com/masjidbaitulhikmah_", icon: <ImageIcon /> },
-  { label: "TikTok", href: "https://tiktok.com/@masjidbaitulhikmah", icon: <Video /> },
+const DEFAULT_SOCIAL_LINKS: FooterSocialItem[] = [
+  { label: "Instagram", href: "https://instagram.com/masjidbaitulhikmah_" },
+  { label: "TikTok", href: "https://tiktok.com/@masjidbaitulhikmah" },
 ];
 
 export interface FooterProps {
@@ -63,7 +86,7 @@ export interface FooterProps {
   logoSrc?: string;
   navItems?: FooterNavItem[];
   contactItems?: FooterContactItem[];
-  socialLinks?: SocialLink[];
+  socialLinks?: FooterSocialItem[];
   /** @default the current year */
   copyrightYear?: number;
   copyrightHolder?: string;
@@ -93,6 +116,13 @@ export function Footer({
   id = "kontak",
   className,
 }: FooterProps) {
+  // Icons are resolved here, not passed in as props — see FooterSocialItem's
+  // note above and CONTACT_ICON_BY_LABEL.
+  const resolvedSocialLinks: SocialLink[] = socialLinks.map((link) => {
+    const Icon = socialPlatformIcon(link.label);
+    return { ...link, icon: <Icon aria-hidden /> };
+  });
+
   return (
     <Section
       as="footer"
@@ -156,9 +186,10 @@ export function Footer({
                 <span className="text-label text-surface/50">Kontak</span>
                 <Stack gap="sm">
                   {contactItems.map((item) => {
+                    const Icon = CONTACT_ICON_BY_LABEL[item.label] ?? MapPin;
                     const value = (
                       <span className="inline-flex items-start gap-2 text-small text-surface/80">
-                        <item.icon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
+                        <Icon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
                         {item.value}
                       </span>
                     );
@@ -185,7 +216,7 @@ export function Footer({
 
             <Stack gap="sm">
               <span className="text-label text-surface/50">Media Sosial</span>
-              <SocialLinks links={socialLinks} tone="inverted" className="-ml-2.5" />
+              <SocialLinks links={resolvedSocialLinks} tone="inverted" className="-ml-2.5" />
             </Stack>
           </Grid>
 
