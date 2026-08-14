@@ -13,6 +13,7 @@ export {
   DonationProgress,
   type DonationProgressProps,
 } from "@/components/features/donation/DonationProgress";
+export { DonationModal, type DonationModalProps } from "@/components/features/donation/DonationModal";
 
 export {
   FinancialSummaryCard,

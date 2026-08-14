@@ -254,6 +254,13 @@ export default async function Home() {
           // route — left untouched (see report's Architectural Findings).
           title={featuredDonationProgram?.name ?? undefined}
           subtitle={featuredDonationProgram?.shortDescription ?? undefined}
+          // Reuses the same already-fetched `siteSettings` Footer reads
+          // below — no second query. Bank fields feed the donation modal
+          // opened by "Salurkan Infaq"; all optional, the modal itself
+          // handles none being configured yet.
+          bankName={siteSettings?.bankName ?? undefined}
+          bankAccountName={siteSettings?.bankAccountName ?? undefined}
+          bankAccountNumber={siteSettings?.bankAccountNumber ?? undefined}
         />
         <Gallery
           // Only plain strings cross into the Client Component — never the

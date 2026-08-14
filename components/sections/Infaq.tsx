@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,6 +10,7 @@ import { Container } from "@/components/layout/Container";
 import { Stack } from "@/components/layout/Stack";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { buttonVariants } from "@/components/ui/Button";
+import { DonationModal } from "@/components/features";
 import { fadeUp, staggerChildren } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +30,13 @@ export interface InfaqProps {
   title?: string;
   subtitle?: string;
   trustIndicators?: TrustIndicator[];
-  primaryCta?: { label: string; href: string };
+  /** No `href` — clicking it opens the donation modal in place, it never navigates. */
+  primaryCta?: { label: string };
   secondaryCta?: { label: string; href: string };
+  /** Bank transfer details shown inside the donation modal — from SiteSetting, same source Footer/admin already read. All optional; the modal shows a graceful fallback if none are configured yet. */
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
   /** Anchor id — Navbar's "Infaq" link points to `#infaq` by default. */
   id?: string;
   className?: string;
@@ -37,10 +44,10 @@ export interface InfaqProps {
 
 /**
  * Infaq call-to-action banner — one of the homepage's strongest CTAs. No
- * forms or payment logic here by design; both CTAs are plain links out to
- * the dedicated donation flow (`/donasi`), which a backend/payment gateway
- * can own entirely. Every piece of copy is a prop with a placeholder
- * default, ready for a CMS to override later.
+ * payment gateway here by design; the primary CTA opens `DonationModal`
+ * (QRIS + bank transfer only) in place, and the secondary CTA is a plain
+ * link out to a dedicated donation-programs page. Every piece of copy is a
+ * prop with a placeholder default, ready for a CMS to override later.
  *
  * Runs on a Brand Gold background (via `className` override on `Section`
  * rather than a new background variant — `Section` itself stays untouched).
@@ -54,11 +61,15 @@ export function Infaq({
   title = "Infaq Pembangunan Masjid",
   subtitle = "Setiap infaq yang Anda salurkan menjadi bagian nyata dari pembangunan dan perawatan masjid — diamanahkan secara transparan untuk kenyamanan ibadah warga Gondolayu Lor, kini dan di masa mendatang.",
   trustIndicators = DEFAULT_TRUST_INDICATORS,
-  primaryCta = { label: "Salurkan Infaq", href: "/donasi" },
+  primaryCta = { label: "Salurkan Infaq" },
   secondaryCta = { label: "Pelajari Program Infaq", href: "/program-donasi" },
+  bankName,
+  bankAccountName,
+  bankAccountNumber,
   id = "infaq",
   className,
 }: InfaqProps) {
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   return (
     // "md" spacing — matches the rest of the homepage's rhythm; only the
     // Section's own external py-* changes here, nothing inside (heading,
@@ -98,9 +109,14 @@ export function Infaq({
             </motion.div>
 
             <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-4">
-              <Link href={primaryCta.href} className={cn(buttonVariants({ variant: "primary", size: "lg" }))}>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => setIsDonationModalOpen(true)}
+                className={cn(buttonVariants({ variant: "primary", size: "lg" }))}
+              >
                 {primaryCta.label}
-              </Link>
+              </button>
               <Link
                 href={secondaryCta.href}
                 className={cn(
@@ -114,6 +130,14 @@ export function Infaq({
           </Stack>
         </motion.div>
       </Container>
+
+      <DonationModal
+        open={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+        bankName={bankName}
+        bankAccountName={bankAccountName}
+        bankAccountNumber={bankAccountNumber}
+      />
     </Section>
   );
 }
