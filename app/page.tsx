@@ -19,6 +19,7 @@ import { getHijriOverrideForDate } from "@/lib/hijri/hijri-overrides";
 import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
+import { getFeaturedGalleryAlbums } from "@/lib/gallery/gallery-albums";
 import { parseDateOnly } from "@/lib/date";
 import type { BadgeProps } from "@/components/ui/Badge";
 
@@ -48,11 +49,12 @@ function getTodayDateKeyInJakarta(): string {
 export default async function Home() {
   const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
 
-  const [hero, about, hijriOverride, upcomingEvents] = await Promise.all([
+  const [hero, about, hijriOverride, upcomingEvents, galleryAlbums] = await Promise.all([
     getCurrentHero(),
     getCurrentAbout(),
     todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
     getUpcomingEvents(),
+    getFeaturedGalleryAlbums(),
   ]);
 
   return (
@@ -132,7 +134,23 @@ export default async function Home() {
         />
         <Financial />
         <Infaq />
-        <Gallery />
+        <Gallery
+          // Only plain strings cross into the Client Component — never the
+          // GalleryAlbum/Media records themselves. Omitted (undefined, when
+          // there are no published albums with a cover image) falls back to
+          // Gallery's own existing hardcoded defaults, unchanged.
+          items={
+            galleryAlbums.length > 0
+              ? galleryAlbums.map((album) => ({
+                  src: album.coverImage.storagePath,
+                  alt: album.coverImage.altText ?? album.coverImage.fileName,
+                  title: album.title,
+                  date: album.eventDate ? formatEventDate(album.eventDate) : undefined,
+                  href: `/galeri/${album.slug}`,
+                }))
+              : undefined
+          }
+        />
         <SocialMedia />
         <Location />
       </main>

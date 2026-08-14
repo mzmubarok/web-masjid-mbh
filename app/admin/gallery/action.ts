@@ -172,6 +172,9 @@ export async function createGalleryAlbum(
   }
 
   revalidatePath("/admin/gallery");
+  // The public homepage reads published gallery albums (see app/page.tsx) —
+  // same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
   redirect("/admin/gallery");
 }
 
@@ -250,6 +253,7 @@ export async function updateGalleryAlbum(
 
   revalidatePath("/admin/gallery");
   revalidatePath(`/admin/gallery/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/gallery");
 }
 
@@ -290,6 +294,7 @@ export async function deleteGalleryAlbum(
   }
 
   revalidatePath("/admin/gallery");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.
@@ -318,6 +323,7 @@ export async function toggleGalleryAlbumPublished(id: string, nextIsPublished: b
   });
 
   revalidatePath("/admin/gallery");
+  revalidatePath("/");
 }
 
 /** Flips `isFeatured`. Bound with `.bind(null, id, nextIsFeatured)`. No maximum-featured-count is enforced — plain boolean. */
@@ -334,6 +340,7 @@ export async function toggleGalleryAlbumFeatured(id: string, nextIsFeatured: boo
   });
 
   revalidatePath("/admin/gallery");
+  revalidatePath("/");
 }
 
 /** The next free sortOrder in an album — existing highest plus one, or 1 for the first photo. */

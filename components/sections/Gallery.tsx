@@ -15,8 +15,8 @@ export interface GalleryItem {
   src: string;
   alt: string;
   title: string;
-  /** Pre-formatted date, e.g. "10 Januari 2026". No date logic lives here. */
-  date: string;
+  /** Pre-formatted date, e.g. "10 Januari 2026". No date logic lives here. Optional — GalleryCard already renders fine without one. */
+  date?: string;
   href: string;
 }
 
