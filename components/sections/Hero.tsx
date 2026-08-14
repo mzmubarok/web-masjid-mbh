@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentType } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { CloudSun, Moon, MoonStar, Sun, Sunrise, Sunset } from "lucide-react";
@@ -7,6 +8,7 @@ import { Section } from "@/components/layout/Section";
 import { Container } from "@/components/layout/Container";
 import { PrayerScheduleCard, type PrayerScheduleItem } from "@/components/features/prayer/PrayerScheduleCard";
 import { EASE_PREMIUM, fadeUp, staggerChildren } from "@/lib/motion";
+import { formatGregorianDate } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SCHEDULE: PrayerScheduleItem[] = [
@@ -18,15 +20,21 @@ const DEFAULT_SCHEDULE: PrayerScheduleItem[] = [
   { name: "Isya", time: "19:00", icon: Moon },
 ];
 
-/** Today's real Gregorian date — plain formatting, not a prayer-time calculation. */
+// Icons are never CMS/calculation-driven (see lib/prayer/format-prayer-schedule.ts,
+// which deliberately omits `icon`) — resolved here by name instead, same
+// convention as Footer's CONTACT_ICON_BY_LABEL / About's VALUE_ICONS.
+const PRAYER_ICON_BY_NAME: Record<string, ComponentType<{ className?: string }>> = {
+  Subuh: MoonStar,
+  Terbit: Sunrise,
+  Zuhur: Sun,
+  Asar: CloudSun,
+  Maghrib: Sunset,
+  Isya: Moon,
+};
+
+/** Today's real Gregorian date, live from the browser's clock — used only when the server didn't already pass one (see `lib/date.ts`'s `formatGregorianDate`, shared with `app/page.tsx`). */
 function getTodayGregorianDate() {
-  return new Intl.DateTimeFormat("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "Asia/Jakarta",
-  }).format(new Date());
+  return formatGregorianDate(new Date());
 }
 
 // Background-only fade — a plain opacity transition (no translate), separate
@@ -76,6 +84,13 @@ export function Hero({
   // animation entirely and render straight into the final state.
   const initial = reduceMotion ? false : "hidden";
   const resolvedGregorianDate = gregorianDate ?? getTodayGregorianDate();
+  // CMS-driven schedule items arrive with no `icon` (see PRAYER_ICON_BY_NAME
+  // above) — DEFAULT_SCHEDULE's own items already carry one, so this is a
+  // no-op for the fallback path.
+  const resolvedSchedule = schedule.map((item) => ({
+    ...item,
+    icon: item.icon ?? PRAYER_ICON_BY_NAME[item.name],
+  }));
 
   return (
     <Section
@@ -152,7 +167,7 @@ export function Hero({
               corner without ever reaching the header text. */}
           <motion.div variants={fadeUp} className="relative z-10 -mt-2 w-full max-w-2xl sm:-mt-3">
             <PrayerScheduleCard
-              schedule={schedule}
+              schedule={resolvedSchedule}
               hijriDate={hijriDate}
               gregorianDate={resolvedGregorianDate}
               className="p-5 sm:p-6"

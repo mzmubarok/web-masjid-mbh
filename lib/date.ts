@@ -13,3 +13,19 @@ export function parseDateOnly(value: string): Date | null {
 export function toDateInputValue(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * "Sabtu, 15 Agustus 2026" — Indonesian, always in Asia/Jakarta regardless
+ * of the server/browser's own timezone. Shared by Hero's client-side "now"
+ * fallback and the homepage's server-side render, so both ever produce this
+ * format in exactly one place.
+ */
+export function formatGregorianDate(date: Date): string {
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  }).format(date);
+}

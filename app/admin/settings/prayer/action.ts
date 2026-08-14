@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { LFNU_PARAMETERS } from "@/lib/prayer/prayer-parameters";
 
 export interface PrayerSettingsActionState {
   status: "idle" | "success" | "error";
@@ -53,6 +54,7 @@ interface ParsedPrayerSettingsInput {
   longitude: string;
   timezone: string;
   calculationMethod: string;
+  calculationMode: "LFNU" | "CUSTOM";
   madhab: string;
   isAutomatic: boolean;
   fajrAngle: string | null;
@@ -75,11 +77,6 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
     return { error: "Please fill in the following required field: Calculation Method." };
   }
 
-  const madhab = readOptionalString(formData, "madhab");
-  if (!madhab) {
-    return { error: "Please fill in the following required field: Madhab." };
-  }
-
   const latitude = parseDecimalField(formData, "latitude", "Latitude");
   if (typeof latitude !== "string") {
     return latitude;
@@ -98,6 +95,34 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
     return { error: "Longitude must be between -180 and 180." };
   }
 
+  // LFNU is the default whenever the submitted value isn't literally
+  // "CUSTOM" — matches the form's own radio default and means a missing/
+  // tampered field fails safe into the standard mode, not an unvalidated one.
+  const calculationMode: "LFNU" | "CUSTOM" = formData.get("calculationMode") === "CUSTOM" ? "CUSTOM" : "LFNU";
+
+  // LFNU mode always uses LFNU_PARAMETERS (see lib/prayer/prayer-parameters.ts)
+  // — its Fajr Angle/Isha Angle/Madhab inputs are disabled in the form and
+  // never submitted, so they're never required or read here for this mode.
+  if (calculationMode === "LFNU") {
+    return {
+      mosqueName,
+      latitude,
+      longitude,
+      timezone,
+      calculationMethod,
+      calculationMode,
+      madhab: LFNU_PARAMETERS.madhab,
+      isAutomatic: formData.get("isAutomatic") !== null,
+      fajrAngle: String(LFNU_PARAMETERS.fajrAngle),
+      ishaAngle: String(LFNU_PARAMETERS.ishaAngle),
+    };
+  }
+
+  const madhab = readOptionalString(formData, "madhab");
+  if (!madhab) {
+    return { error: "Please fill in the following required field: Madhab." };
+  }
+
   const fajrAngle = parseOptionalDecimalField(formData, "fajrAngle", "Fajr Angle");
   if (fajrAngle !== null && typeof fajrAngle !== "string") {
     return fajrAngle;
@@ -114,6 +139,7 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
     longitude,
     timezone,
     calculationMethod,
+    calculationMode,
     madhab,
     isAutomatic: formData.get("isAutomatic") !== null,
     fajrAngle,
@@ -147,6 +173,7 @@ export async function updatePrayerSettings(
     longitude: parsed.longitude,
     timezone: parsed.timezone,
     calculationMethod: parsed.calculationMethod,
+    calculationMode: parsed.calculationMode,
     madhab: parsed.madhab,
     isAutomatic: parsed.isAutomatic,
     fajrAngle: parsed.fajrAngle,
@@ -167,6 +194,11 @@ export async function updatePrayerSettings(
   }
 
   revalidatePath("/admin/settings/prayer");
+  // The homepage reads PrayerSetting too (see app/page.tsx) — same
+  // convention every other CMS action already follows (Hero, About,
+  // Events, ...). Missing here before now, so an admin edit wouldn't
+  // reach "/" until some unrelated action happened to revalidate it.
+  revalidatePath("/");
 
   return { status: "success", message: "Prayer settings updated successfully." };
 }

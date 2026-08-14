@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { ReactNode } from "react";
 
 import { updatePrayerSettings } from "@/app/admin/settings/prayer/action";
 import type { PrayerSettingsActionState } from "@/app/admin/settings/prayer/action";
 import type { PrayerSetting } from "@/lib/generated/prisma/client";
+import { LFNU_PARAMETERS } from "@/lib/prayer/prayer-parameters";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -82,6 +83,18 @@ const initialState: PrayerSettingsActionState = { status: "idle", message: "" };
 export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
   const [state, formAction, isPending] = useActionState(updatePrayerSettings, initialState);
 
+  // LFNU is the default mode — Fajr Angle/Isha Angle/Madhab are then fixed
+  // by the standard itself (see LFNU_PARAMETERS) and disabled below, so
+  // FormData never carries submitted values for them; action.ts's own
+  // parsing branches the same way, independently of whatever's here.
+  const [calculationMode, setCalculationMode] = useState<"LFNU" | "CUSTOM">(
+    settings?.calculationMode === "CUSTOM" ? "CUSTOM" : "LFNU"
+  );
+  const [madhab, setMadhab] = useState(settings?.madhab ?? "");
+  const [fajrAngle, setFajrAngle] = useState(settings?.fajrAngle?.toString() ?? "");
+  const [ishaAngle, setIshaAngle] = useState(settings?.ishaAngle?.toString() ?? "");
+  const isLfnu = calculationMode === "LFNU";
+
   return (
     <form action={formAction} className="space-y-6">
       <Card>
@@ -130,6 +143,25 @@ export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
           <CardDescription>How prayer times are calculated for this mosque.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Field
+            label="Calculation Mode"
+            htmlFor="calculationMode"
+            required
+            hint="Lembaga Falakiyah NU is this site's standard — Custom allows a different Fajr/Isha angle and madhab."
+          >
+            <select
+              id="calculationMode"
+              name="calculationMode"
+              required
+              value={calculationMode}
+              onChange={(event) => setCalculationMode(event.target.value === "CUSTOM" ? "CUSTOM" : "LFNU")}
+              className={selectClassName}
+            >
+              <option value="LFNU">Lembaga Falakiyah NU (Default)</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+          </Field>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Calculation Method" htmlFor="calculationMethod" required>
               <select
@@ -150,20 +182,27 @@ export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
               </select>
             </Field>
 
-            <Field label="Madhab" htmlFor="madhab" required hint="Determines Asr calculation.">
+            <Field
+              label="Madhab"
+              htmlFor="madhab"
+              required={!isLfnu}
+              hint={isLfnu ? "Fixed by the LFNU standard." : "Determines Asr calculation."}
+            >
               <select
                 id="madhab"
                 name="madhab"
-                required
-                defaultValue={settings?.madhab ?? ""}
+                required={!isLfnu}
+                disabled={isLfnu}
+                value={isLfnu ? LFNU_PARAMETERS.madhab : madhab}
+                onChange={(event) => setMadhab(event.target.value)}
                 className={selectClassName}
               >
                 <option value="" disabled>
                   Select a madhab
                 </option>
-                {MADHABS.map((madhab) => (
-                  <option key={madhab} value={madhab}>
-                    {madhab}
+                {MADHABS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -187,28 +226,32 @@ export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
             <Field
               label="Fajr Angle"
               htmlFor="fajrAngle"
-              hint="Optional — only needed for a custom calculation method."
+              hint={isLfnu ? "Fixed by the LFNU standard." : "Optional — only needed for a custom calculation method."}
             >
               <Input
                 id="fajrAngle"
                 name="fajrAngle"
                 type="number"
                 step="any"
-                defaultValue={settings?.fajrAngle?.toString() ?? ""}
+                disabled={isLfnu}
+                value={isLfnu ? LFNU_PARAMETERS.fajrAngle : fajrAngle}
+                onChange={(event) => setFajrAngle(event.target.value)}
               />
             </Field>
 
             <Field
               label="Isha Angle"
               htmlFor="ishaAngle"
-              hint="Optional — only needed for a custom calculation method."
+              hint={isLfnu ? "Fixed by the LFNU standard." : "Optional — only needed for a custom calculation method."}
             >
               <Input
                 id="ishaAngle"
                 name="ishaAngle"
                 type="number"
                 step="any"
-                defaultValue={settings?.ishaAngle?.toString() ?? ""}
+                disabled={isLfnu}
+                value={isLfnu ? LFNU_PARAMETERS.ishaAngle : ishaAngle}
+                onChange={(event) => setIshaAngle(event.target.value)}
               />
             </Field>
           </div>

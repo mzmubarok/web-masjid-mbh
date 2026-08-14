@@ -17,6 +17,9 @@ import { getCurrentHero } from "@/lib/hero/hero";
 import { getCurrentAbout } from "@/lib/about/about";
 import { getHijriOverrideForDate } from "@/lib/hijri/hijri-overrides";
 import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
+import { getPrayerSettings } from "@/lib/prayer/prayer-settings";
+import { calculatePrayerTimes } from "@/lib/prayer/calculate-prayer-times";
+import { formatPrayerSchedule } from "@/lib/prayer/format-prayer-schedule";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
 import { getFeaturedGalleryAlbums } from "@/lib/gallery/gallery-albums";
@@ -27,8 +30,19 @@ import { getContactLocation } from "@/lib/contact/contact-location";
 import { toWhatsAppHref, formatOperatingHours } from "@/lib/contact/format-contact";
 import { getActiveSocialMediaLinks } from "@/lib/social-media/social-media";
 import { getSiteSettings } from "@/lib/settings/site-settings";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, formatGregorianDate } from "@/lib/date";
 import type { BadgeProps } from "@/components/ui/Badge";
+
+// Bounds how stale the homepage's date-derived content (Gregorian date,
+// Hijri override lookup, prayer schedule — see todayJakarta below) can get
+// after a static-generation cutover, without paying force-dynamic's cost of
+// re-running every query on every request. A full 24h window would be
+// measured from whenever the page last happened to regenerate (e.g. an
+// unrelated admin edit), not from midnight itself, so it could leave the
+// wrong day showing for most of the next day; an hourly window bounds that
+// worst case to under an hour while still cutting regenerations ~24x
+// against force-dynamic for any real traffic volume.
+export const revalidate = 3600;
 
 // EventCategory has no field that maps onto Badge's fixed tone enum
 // (its own `color` is a freeform hex string) — so the landing page's
@@ -78,6 +92,7 @@ export default async function Home() {
     hero,
     about,
     hijriOverride,
+    prayerSettings,
     upcomingEvents,
     galleryAlbums,
     financialSummaries,
@@ -89,6 +104,7 @@ export default async function Home() {
     getCurrentHero(),
     getCurrentAbout(),
     todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
+    getPrayerSettings(),
     getUpcomingEvents(),
     getFeaturedGalleryAlbums(),
     getHomepageFinancialSummaries(),
@@ -97,6 +113,15 @@ export default async function Home() {
     getActiveSocialMediaLinks(),
     getSiteSettings(),
   ]);
+
+  // Reuses todayJakarta (already computed above for the Hijri override
+  // lookup) as the calculation date — no second "what day is it" source.
+  // Omitted (undefined) when no PrayerSetting row exists yet, falling back
+  // to Hero's own hardcoded DEFAULT_SCHEDULE, unchanged.
+  const todaySchedule =
+    prayerSettings && todayJakarta
+      ? formatPrayerSchedule(calculatePrayerTimes(prayerSettings, todayJakarta), prayerSettings.timezone)
+      : undefined;
 
   return (
     <PageWrapper>
@@ -125,6 +150,21 @@ export default async function Home() {
               ? formatHijriDate(hijriOverride.hijriDay, hijriOverride.hijriMonth, hijriOverride.hijriYear)
               : undefined
           }
+          // Reuses the exact same todayJakarta used for the Hijri override
+          // lookup and the prayer calculation below — previously omitted,
+          // which let Hero fall back to computing its own "now" client-side
+          // (always live) while Hijri/Prayer stayed frozen at last static
+          // generation, so the two could disagree across a day boundary.
+          // Passing it here guarantees all three always refer to the same
+          // "today" (see report's Requirement 3 fix).
+          gregorianDate={todayJakarta ? formatGregorianDate(todayJakarta) : undefined}
+          // Calculated from PrayerSetting via adhan — see lib/prayer/. Only
+          // plain {name, time} objects cross into the Client Component;
+          // icons are never CMS-driven and stay resolved inside Hero itself
+          // (see PRAYER_ICON_BY_NAME). Omitted (undefined, when no
+          // PrayerSetting row exists yet) falls back to Hero's own
+          // hardcoded DEFAULT_SCHEDULE, unchanged.
+          schedule={todaySchedule}
         />
         <About
           // Only plain strings/objects cross into the Client Component —

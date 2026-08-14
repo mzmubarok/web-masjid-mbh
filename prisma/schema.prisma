@@ -443,6 +443,11 @@ model PrayerSetting {
   isAutomatic       Boolean  @default(true)
   fajrAngle         Decimal?
   ishaAngle         Decimal?
+  // "LFNU" (default) always calculates using the fixed Lembaga Falakiyah
+  // Nahdlatul Ulama angles/madhab (see lib/prayer/prayer-parameters.ts's
+  // LFNU_PARAMETERS), ignoring fajrAngle/ishaAngle/madhab above entirely.
+  // "CUSTOM" uses exactly what's configured in those fields instead.
+  calculationMode String @default("LFNU")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
