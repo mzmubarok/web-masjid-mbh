@@ -34,3 +34,10 @@ export { GalleryCard, type GalleryCardProps } from "@/components/features/galler
 export { LocationCard, type LocationCardProps } from "@/components/features/location/LocationCard";
 
 export { ContactCard, type ContactCardProps } from "@/components/features/contact/ContactCard";
+
+export { InstagramEmbed, type InstagramEmbedProps } from "@/components/features/social/InstagramEmbed";
+export { TikTokEmbed, type TikTokEmbedProps } from "@/components/features/social/TikTokEmbed";
+export {
+  LazySocialEmbedRow,
+  type LazySocialEmbedRowProps,
+} from "@/components/features/social/LazySocialEmbedRow";

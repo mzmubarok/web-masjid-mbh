@@ -11,8 +11,14 @@ import { Grid } from "@/components/layout/Grid";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { buttonVariants } from "@/components/ui/Button";
+import { LazySocialEmbedRow } from "@/components/features";
 import { fadeUp, staggerChildren } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+export interface SocialEmbedPost {
+  id: string;
+  postUrl: string;
+}
 
 export interface SocialPreviewItem {
   /** Omit until a real API integration exists — renders a placeholder tile instead. */
@@ -61,29 +67,30 @@ export interface SocialMediaProps {
   /** The two featured platform cards — a prop, so real accounts/data can be swapped in later. */
   platforms?: SocialPlatform[];
   /**
-   * Interactive post/reel embed URLs, matched to a platform by its `name`
+   * Published embed posts, matched to a platform by its `name`
    * ("Instagram"/"TikTok") — kept separate from `platforms` so the rest of
-   * each card's hardcoded copy never has to be duplicated just to add an
-   * embed. Omit to keep the existing placeholder preview grid exactly as
-   * today; the same container swaps to a live `<iframe>` the moment a URL
-   * is provided, no other change needed.
+   * each card's hardcoded copy never has to be duplicated just to add
+   * embeds. Omit (or pass an empty array) to keep the existing placeholder
+   * preview grid exactly as today; the same container swaps to a row of
+   * live official embeds the moment posts are provided, no other change
+   * needed.
    */
-  instagramEmbedUrl?: string;
-  tiktokEmbedUrl?: string;
+  instagramPosts?: SocialEmbedPost[];
+  tiktokPosts?: SocialEmbedPost[];
   /** Anchor id — no Navbar link points here yet, kept for consistency with other sections. */
   id?: string;
   className?: string;
 }
 
-/** Matches a platform card to its embed URL by name — the only two platforms this teaser ever shows by default. */
-function embedUrlForPlatform(
+/** Matches a platform card to its embed posts by name — the only two platforms this teaser ever shows by default. */
+function postsForPlatform(
   platformName: string,
-  instagramEmbedUrl: string | undefined,
-  tiktokEmbedUrl: string | undefined
-): string | undefined {
-  if (platformName === "Instagram") return instagramEmbedUrl;
-  if (platformName === "TikTok") return tiktokEmbedUrl;
-  return undefined;
+  instagramPosts: SocialEmbedPost[],
+  tiktokPosts: SocialEmbedPost[]
+): SocialEmbedPost[] {
+  if (platformName === "Instagram") return instagramPosts;
+  if (platformName === "TikTok") return tiktokPosts;
+  return [];
 }
 
 /**
@@ -99,8 +106,8 @@ export function SocialMedia({
   title = "Ikuti Aktivitas Kami",
   description = "Stay connected with the latest activities, lectures, and community updates from Masjid Baitul Hikmah Gondolayu Lor.",
   platforms = DEFAULT_PLATFORMS,
-  instagramEmbedUrl,
-  tiktokEmbedUrl,
+  instagramPosts = [],
+  tiktokPosts = [],
   id = "media-sosial",
   className,
 }: SocialMediaProps) {
@@ -118,10 +125,10 @@ export function SocialMedia({
           >
             <Grid cols={2}>
               {platforms.map((platform) => {
-                const embedUrl = embedUrlForPlatform(platform.name, instagramEmbedUrl, tiktokEmbedUrl);
+                const posts = postsForPlatform(platform.name, instagramPosts, tiktokPosts);
 
                 return (
-                <motion.div key={platform.name} variants={fadeUp}>
+                <motion.div key={platform.name} variants={fadeUp} className="min-w-0">
                   <Card interactive className="h-full">
                     <Stack gap="md">
                       <CardHeader>
@@ -137,21 +144,11 @@ export function SocialMedia({
                         <CardDescription className="pt-1">{platform.description}</CardDescription>
                       </CardHeader>
 
-                      {embedUrl ? (
-                        <div
-                          className={cn(
-                            "relative w-full overflow-hidden rounded-md bg-muted",
-                            platform.previewAspect === "square" ? "aspect-square" : "aspect-[9/16]"
-                          )}
-                        >
-                          <iframe
-                            src={embedUrl}
-                            title={`${platform.name} embed`}
-                            loading="lazy"
-                            className="absolute inset-0 size-full border-0"
-                            allowFullScreen
-                          />
-                        </div>
+                      {posts.length > 0 ? (
+                        <LazySocialEmbedRow
+                          platform={platform.name === "Instagram" ? "Instagram" : "TikTok"}
+                          posts={posts}
+                        />
                       ) : (
                         <div
                           className={cn(

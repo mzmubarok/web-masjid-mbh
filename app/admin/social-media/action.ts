@@ -16,6 +16,11 @@ export interface DeleteSocialMediaState {
   message: string;
 }
 
+export interface SocialMediaPostActionState {
+  status: "idle" | "success" | "error";
+  message: string;
+}
+
 function readOptionalString(formData: FormData, key: string): string | null {
   const value = formData.get(key);
   const trimmed = typeof value === "string" ? value.trim() : "";
@@ -27,33 +32,11 @@ function isUniqueConstraintError(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-/** Confirms an optional embed URL is a well-formed URL whose host is (or is a subdomain of) `expectedHost`. `null` is always valid — the field is optional. */
-function validateEmbedUrlHost(value: string | null, expectedHost: string, label: string): string | { error: string } | null {
-  if (!value) {
-    return null;
-  }
-
-  let hostname: string;
-  try {
-    hostname = new URL(value).hostname;
-  } catch {
-    return { error: `${label} must be a valid URL.` };
-  }
-
-  if (hostname !== expectedHost && !hostname.endsWith(`.${expectedHost}`)) {
-    return { error: `${label} must be a valid ${expectedHost} URL.` };
-  }
-
-  return value;
-}
-
 interface ParsedSocialMediaInput {
   platform: string;
   url: string;
   iconId: string | null;
   displayOrder: number;
-  instagramEmbedUrl: string | null;
-  tiktokEmbedUrl: string | null;
 }
 
 function parseSocialMediaForm(formData: FormData): ParsedSocialMediaInput | { error: string } {
@@ -78,31 +61,11 @@ function parseSocialMediaForm(formData: FormData): ParsedSocialMediaInput | { er
     return { error: "Display Order must be a valid integer." };
   }
 
-  const instagramEmbedUrl = validateEmbedUrlHost(
-    readOptionalString(formData, "instagramEmbedUrl"),
-    "instagram.com",
-    "Instagram Embed URL"
-  );
-  if (instagramEmbedUrl !== null && typeof instagramEmbedUrl !== "string") {
-    return instagramEmbedUrl;
-  }
-
-  const tiktokEmbedUrl = validateEmbedUrlHost(
-    readOptionalString(formData, "tiktokEmbedUrl"),
-    "tiktok.com",
-    "TikTok Embed URL"
-  );
-  if (tiktokEmbedUrl !== null && typeof tiktokEmbedUrl !== "string") {
-    return tiktokEmbedUrl;
-  }
-
   return {
     platform,
     url,
     iconId: readOptionalString(formData, "iconId"),
     displayOrder,
-    instagramEmbedUrl,
-    tiktokEmbedUrl,
   };
 }
 
@@ -148,8 +111,6 @@ export async function createSocialMedia(
         url: parsed.url,
         iconId: parsed.iconId,
         displayOrder: parsed.displayOrder,
-        instagramEmbedUrl: parsed.instagramEmbedUrl,
-        tiktokEmbedUrl: parsed.tiktokEmbedUrl,
         isActive: true,
       },
     });
@@ -214,8 +175,6 @@ export async function updateSocialMedia(
         url: parsed.url,
         iconId: parsed.iconId,
         displayOrder: parsed.displayOrder,
-        instagramEmbedUrl: parsed.instagramEmbedUrl,
-        tiktokEmbedUrl: parsed.tiktokEmbedUrl,
       },
     });
   } catch (error) {
@@ -291,4 +250,264 @@ export async function deleteSocialMedia(
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.
   return { status: "idle", message: "" };
+}
+
+// ---------------------------------------------------------------------------
+// SocialMediaPost — individual embedded posts/videos belonging to a platform.
+// Only Instagram post/reel URLs and TikTok video URLs are accepted; neither
+// platform allows embedding an arbitrary post URL in an <iframe>, so only the
+// URL itself is ever stored (no HTML, no script tags) and rendered later via
+// each platform's own official embed script (see components/features/social).
+// ---------------------------------------------------------------------------
+
+const INSTAGRAM_POST_URL = /^https:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-Za-z0-9_-]+\/?(\?.*)?$/;
+const TIKTOK_POST_URL = /^https:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+\/?(\?.*)?$/;
+
+/** Confirms `postUrl` matches the official post-URL shape for `platform` ("Instagram"/"TikTok", matched loosely like Footer's socialPlatformIcon). */
+function validatePostUrl(platform: string, postUrl: string): string | { error: string } {
+  const normalized = platform.toLowerCase();
+
+  if (normalized.includes("instagram")) {
+    return INSTAGRAM_POST_URL.test(postUrl)
+      ? postUrl
+      : { error: "Post URL must be an Instagram post or reel link, e.g. https://www.instagram.com/p/...." };
+  }
+
+  if (normalized.includes("tiktok")) {
+    return TIKTOK_POST_URL.test(postUrl)
+      ? postUrl
+      : { error: "Video URL must be a TikTok video link, e.g. https://www.tiktok.com/@account/video/1234567890." };
+  }
+
+  return { error: `Embedded posts are only supported for Instagram and TikTok, not "${platform}".` };
+}
+
+/** The next free displayOrder for a platform's posts — existing highest plus one, or 1 for the first post. */
+async function nextPostSortOrder(socialMediaId: string): Promise<number> {
+  const last = await prisma.socialMediaPost.findFirst({
+    where: { socialMediaId },
+    orderBy: { displayOrder: "desc" },
+  });
+  return (last?.displayOrder ?? 0) + 1;
+}
+
+/** Creates a SocialMediaPost under an existing SocialMedia platform. Starts unpublished. */
+export async function createSocialMediaPost(
+  _prevState: SocialMediaPostActionState,
+  formData: FormData
+): Promise<SocialMediaPostActionState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to manage social media links." };
+  }
+
+  const socialMediaId = readOptionalString(formData, "socialMediaId");
+  if (!socialMediaId) {
+    return { status: "error", message: "Missing social media id." };
+  }
+
+  const socialMedia = await prisma.socialMedia.findUnique({ where: { id: socialMediaId } });
+  if (!socialMedia) {
+    return { status: "error", message: "This social media link no longer exists. Please reload the page." };
+  }
+
+  const postUrl = readOptionalString(formData, "postUrl");
+  if (!postUrl) {
+    return { status: "error", message: "Please fill in the following required field: Post URL." };
+  }
+
+  const validatedUrl = validatePostUrl(socialMedia.platform, postUrl);
+  if (typeof validatedUrl !== "string") {
+    return { status: "error", message: validatedUrl.error };
+  }
+
+  const displayOrderRaw = readOptionalString(formData, "displayOrder");
+  let displayOrder: number;
+  if (displayOrderRaw) {
+    displayOrder = Number(displayOrderRaw);
+    if (!Number.isInteger(displayOrder)) {
+      return { status: "error", message: "Display Order must be a valid integer." };
+    }
+  } else {
+    displayOrder = await nextPostSortOrder(socialMediaId);
+  }
+
+  try {
+    await prisma.socialMediaPost.create({
+      data: {
+        socialMediaId,
+        postUrl: validatedUrl,
+        displayOrder,
+        isPublished: formData.get("isPublished") === "on",
+      },
+    });
+  } catch (error) {
+    console.error("Failed to add social media post:", error);
+    return { status: "error", message: "Something went wrong while saving. Please try again." };
+  }
+
+  revalidatePath(`/admin/social-media/${socialMediaId}/edit`);
+  revalidatePath("/");
+
+  return { status: "success", message: "Post added." };
+}
+
+/** Updates a SocialMediaPost's URL, display order, and published state. `socialMediaId` is never editable here. */
+export async function updateSocialMediaPost(
+  _prevState: SocialMediaPostActionState,
+  formData: FormData
+): Promise<SocialMediaPostActionState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to manage social media links." };
+  }
+
+  const id = readOptionalString(formData, "id");
+  if (!id) {
+    return { status: "error", message: "Missing post id." };
+  }
+
+  const existing = await prisma.socialMediaPost.findUnique({
+    where: { id },
+    include: { socialMedia: true },
+  });
+  if (!existing) {
+    return { status: "error", message: "This post no longer exists. Please reload the page." };
+  }
+
+  const postUrl = readOptionalString(formData, "postUrl");
+  if (!postUrl) {
+    return { status: "error", message: "Please fill in the following required field: Post URL." };
+  }
+
+  const validatedUrl = validatePostUrl(existing.socialMedia.platform, postUrl);
+  if (typeof validatedUrl !== "string") {
+    return { status: "error", message: validatedUrl.error };
+  }
+
+  const displayOrderRaw = formData.get("displayOrder");
+  const displayOrderText = typeof displayOrderRaw === "string" ? displayOrderRaw.trim() : "";
+  if (!displayOrderText) {
+    return { status: "error", message: "Please fill in the following required field: Display Order." };
+  }
+
+  const displayOrder = Number(displayOrderText);
+  if (!Number.isInteger(displayOrder)) {
+    return { status: "error", message: "Display Order must be a valid integer." };
+  }
+
+  try {
+    await prisma.socialMediaPost.update({
+      where: { id },
+      data: {
+        postUrl: validatedUrl,
+        displayOrder,
+        isPublished: formData.get("isPublished") === "on",
+      },
+    });
+  } catch (error) {
+    console.error("Failed to update social media post:", error);
+    return { status: "error", message: "Something went wrong while saving. Please try again." };
+  }
+
+  revalidatePath(`/admin/social-media/${existing.socialMediaId}/edit`);
+  revalidatePath("/");
+
+  return { status: "success", message: "Post updated." };
+}
+
+/** Deletes a SocialMediaPost. */
+export async function removeSocialMediaPost(
+  _prevState: SocialMediaPostActionState,
+  formData: FormData
+): Promise<SocialMediaPostActionState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to manage social media links." };
+  }
+
+  const id = readOptionalString(formData, "id");
+  if (!id) {
+    return { status: "error", message: "Missing post id." };
+  }
+
+  const existing = await prisma.socialMediaPost.findUnique({ where: { id } });
+  if (!existing) {
+    return { status: "error", message: "This post no longer exists. Please reload the page." };
+  }
+
+  try {
+    await prisma.socialMediaPost.delete({ where: { id } });
+  } catch (error) {
+    console.error("Failed to remove social media post:", error);
+    return { status: "error", message: "Something went wrong while removing. Please try again." };
+  }
+
+  revalidatePath(`/admin/social-media/${existing.socialMediaId}/edit`);
+  revalidatePath("/");
+
+  // The row disappears from the revalidated list on success — nothing left
+  // on the page to attach a success message to.
+  return { status: "idle", message: "" };
+}
+
+/**
+ * Swaps displayOrder with the adjacent post under the same platform. Bound
+ * with `.bind(null, id, "up" | "down")` from a plain Server Component form.
+ * A no-op at either edge of the list (no neighbor to swap with).
+ */
+export async function reorderSocialMediaPost(id: string, direction: "up" | "down"): Promise<void> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return;
+  }
+
+  const post = await prisma.socialMediaPost.findUnique({ where: { id } });
+  if (!post) {
+    return;
+  }
+
+  const neighbor = await prisma.socialMediaPost.findFirst({
+    where: {
+      socialMediaId: post.socialMediaId,
+      displayOrder: direction === "up" ? { lt: post.displayOrder } : { gt: post.displayOrder },
+    },
+    orderBy: { displayOrder: direction === "up" ? "desc" : "asc" },
+  });
+
+  if (!neighbor) {
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.socialMediaPost.update({ where: { id: post.id }, data: { displayOrder: neighbor.displayOrder } }),
+    prisma.socialMediaPost.update({ where: { id: neighbor.id }, data: { displayOrder: post.displayOrder } }),
+  ]);
+
+  revalidatePath(`/admin/social-media/${post.socialMediaId}/edit`);
+  revalidatePath("/");
+}
+
+/**
+ * Flips `isPublished`. Bound with `.bind(null, id, nextIsPublished)` from a
+ * plain Server Component form — unpublishing never deletes the post.
+ */
+export async function toggleSocialMediaPostPublished(id: string, nextIsPublished: boolean): Promise<void> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return;
+  }
+
+  const post = await prisma.socialMediaPost.update({
+    where: { id },
+    data: { isPublished: nextIsPublished },
+  });
+
+  revalidatePath(`/admin/social-media/${post.socialMediaId}/edit`);
+  revalidatePath("/");
 }

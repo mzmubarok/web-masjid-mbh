@@ -12,10 +12,16 @@ export async function getSocialMediaById(id: string) {
   return prisma.socialMedia.findUnique({ where: { id } });
 }
 
-/** Active social media links for the public site — same ordering as `getSocialMediaList`, filtered to `isActive`. */
+/** Active social media links for the public site — same ordering as `getSocialMediaList`, filtered to `isActive`, with each platform's published embed posts. */
 export async function getActiveSocialMediaLinks() {
   return prisma.socialMedia.findMany({
     where: { isActive: true },
+    include: {
+      posts: {
+        where: { isPublished: true },
+        orderBy: { displayOrder: "asc" },
+      },
+    },
     orderBy: [{ displayOrder: "asc" }, { platform: "asc" }],
   });
 }

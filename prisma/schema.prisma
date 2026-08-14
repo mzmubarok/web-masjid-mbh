@@ -203,18 +203,40 @@ model SocialMedia {
   displayOrder Int
   isActive     Boolean
 
-  // Interactive post/reel embed URLs — distinct from `url` above (the
-  // profile link). Only meaningful on the row whose `platform` matches;
-  // e.g. `instagramEmbedUrl` is read only from the row where
-  // platform = "Instagram". Never HTML, only a URL used as an <iframe> src.
-  instagramEmbedUrl String?
-  tiktokEmbedUrl    String?
+  // Individual embedded posts/videos for this platform — see
+  // SocialMediaPost below. Replaces the single instagramEmbedUrl/
+  // tiktokEmbedUrl columns this model briefly had: Instagram/TikTok don't
+  // support embedding an arbitrary post URL directly in an <iframe>, and a
+  // single URL per platform couldn't represent more than one post anyway.
+  posts SocialMediaPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([displayOrder])
   @@index([isActive])
+}
+
+// One embeddable post/video per row, belonging to a platform (Instagram or
+// TikTok — `postUrl` is validated against whichever platform the parent
+// `socialMedia` row is). Rendered on the public site via each platform's
+// own official embed mechanism (a blockquote + their embed.js script) —
+// never as an <iframe>, since neither platform allows embedding an
+// arbitrary post URL that way. Only the URL is ever stored; no HTML.
+model SocialMediaPost {
+  id            String      @id @default(cuid())
+  socialMediaId String
+  socialMedia   SocialMedia @relation(fields: [socialMediaId], references: [id], onDelete: Cascade)
+  postUrl       String
+  displayOrder  Int
+  isPublished   Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([socialMediaId])
+  @@index([displayOrder])
+  @@index([isPublished])
 }
 
 // Append-only — no updatedAt, entries are never edited after creation.

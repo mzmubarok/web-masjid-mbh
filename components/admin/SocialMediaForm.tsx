@@ -90,34 +90,6 @@ export function SocialMediaForm({ social = null, media }: SocialMediaFormProps) 
             <MediaPicker name="iconId" media={media} defaultValue={social?.iconId ?? null} />
           </Field>
 
-          <Field
-            label="Instagram Embed URL"
-            htmlFor="instagramEmbedUrl"
-            hint="Optional — only used when Platform is Instagram. Paste a Post/Reel embed link (instagram.com)."
-          >
-            <Input
-              id="instagramEmbedUrl"
-              name="instagramEmbedUrl"
-              type="url"
-              autoComplete="off"
-              defaultValue={social?.instagramEmbedUrl ?? ""}
-            />
-          </Field>
-
-          <Field
-            label="TikTok Embed URL"
-            htmlFor="tiktokEmbedUrl"
-            hint="Optional — only used when Platform is TikTok. Paste a Post embed link (tiktok.com)."
-          >
-            <Input
-              id="tiktokEmbedUrl"
-              name="tiktokEmbedUrl"
-              type="url"
-              autoComplete="off"
-              defaultValue={social?.tiktokEmbedUrl ?? ""}
-            />
-          </Field>
-
           <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div
               role={state.status === "error" ? "alert" : "status"}

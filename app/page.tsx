@@ -234,19 +234,21 @@ export default async function Home() {
         />
         <SocialMedia
           // Reuses the same `socialLinks` already fetched for Footer — no
-          // second query. Instagram/TikTok are matched by platform name,
-          // same case-insensitive convention Footer's socialPlatformIcon
-          // already uses. Only the embed URLs cross the boundary (plain
-          // strings); `platforms`' own hardcoded copy is untouched, per
-          // this task's scope. Omitted (undefined) keeps the existing
-          // placeholder preview grid exactly as before.
-          instagramEmbedUrl={
-            socialLinks.find((link) => link.platform.toLowerCase().includes("instagram"))?.instagramEmbedUrl ??
-            undefined
-          }
-          tiktokEmbedUrl={
-            socialLinks.find((link) => link.platform.toLowerCase().includes("tiktok"))?.tiktokEmbedUrl ?? undefined
-          }
+          // second query; getActiveSocialMediaLinks() now also includes
+          // each platform's published SocialMediaPost rows. Instagram/TikTok
+          // are matched by platform name, same case-insensitive convention
+          // Footer's socialPlatformIcon already uses. Only plain
+          // {id, postUrl} objects cross the boundary — never the Prisma
+          // SocialMediaPost records themselves; `platforms`' own hardcoded
+          // copy is untouched, per this task's scope. Empty arrays (no
+          // published posts) keep the existing placeholder preview grid
+          // exactly as before.
+          instagramPosts={socialLinks
+            .find((link) => link.platform.toLowerCase().includes("instagram"))
+            ?.posts.map((post) => ({ id: post.id, postUrl: post.postUrl }))}
+          tiktokPosts={socialLinks
+            .find((link) => link.platform.toLowerCase().includes("tiktok"))
+            ?.posts.map((post) => ({ id: post.id, postUrl: post.postUrl }))}
         />
         <Location
           // Only plain strings/objects cross into the Client Component —
