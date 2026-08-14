@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { syncFinancialReportsFromSheet, type FinancialSheetSyncResult } from "@/lib/finance/sheet-sync";
+import { syncFinancialReports, type FinancialSheetSyncResult } from "@/lib/finance/sync";
 
 // A "running" row older than this is treated as an abandoned/crashed sync,
 // not one still genuinely in progress — otherwise a hard crash mid-sync
@@ -17,7 +17,7 @@ export type FinancialSyncOutcome =
   | ({ alreadyRunning: false; durationMs: number } & FinancialSheetSyncResult);
 
 /**
- * Wraps `syncFinancialReportsFromSheet` — never re-implements its
+ * Wraps `syncFinancialReports` — never re-implements its
  * fetch/parse/upsert logic — with the monitoring this phase adds: a
  * `FinancialSyncRun` history row per attempt, and a simple check against any
  * still-running row so the manual button and the daily cron can never
@@ -45,7 +45,7 @@ export async function recordFinancialSheetSync(
   const startedAt = Date.now();
 
   try {
-    const result = await syncFinancialReportsFromSheet(actorUserId);
+    const result = await syncFinancialReports(actorUserId);
     const durationMs = Date.now() - startedAt;
 
     await prisma.financialSyncRun.update({

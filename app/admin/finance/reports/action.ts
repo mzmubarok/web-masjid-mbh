@@ -372,10 +372,11 @@ export async function deleteFinancialReport(
 
 /**
  * Manually triggers the same import the daily cron uses — see
- * `lib/finance/sheet-sync.ts` for the actual fetch/parse/upsert logic and
- * `lib/finance/sync-monitoring.ts` for the history/lock wrapper this action
- * calls. Neither is duplicated here. The signed-in admin is passed through
- * as `actorUserId`; the cron route supplies its own actor instead.
+ * `lib/finance/sync.ts` for the orchestration (csv.ts → parse/validate →
+ * upsert) and `lib/finance/sync-monitoring.ts` for the history/lock
+ * wrapper this action calls. Neither is duplicated here. The signed-in
+ * admin is passed through as `actorUserId`; the cron route supplies its
+ * own actor instead.
  */
 export async function syncFinancialReportsFromSheetAction(
   // Required by useActionState's (state, formData) calling convention —

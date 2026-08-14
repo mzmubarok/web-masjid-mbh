@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   // A scheduled run has no signed-in admin to attribute the sync to, but
-  // syncFinancialReportsFromSheet requires a real User id (createdById/
+  // syncFinancialReports requires a real User id (createdById/
   // updatedById are non-nullable) — the same requirement the manual button
   // satisfies with the clicking admin's session. The longest-standing Super
   // Admin stands in here; this never changes what the sync function itself
