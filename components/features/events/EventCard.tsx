@@ -50,7 +50,14 @@ export function EventCard({
             className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105"
           />
         </div>
-      ) : null}
+      ) : (
+        // No featured photo — a neutral placeholder in the same box (never
+        // the Hero photo, which belongs to the Hero section, not events
+        // that happen not to have their own photo yet).
+        <div className="flex aspect-video w-full items-center justify-center overflow-hidden bg-muted">
+          <CalendarDays className="size-10 text-muted-foreground" aria-hidden />
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col gap-6 p-(--space-card-padding)">
         <Stack gap="sm" className="flex-1">

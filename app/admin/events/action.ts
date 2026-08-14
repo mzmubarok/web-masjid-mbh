@@ -13,6 +13,11 @@ export interface EventActionState {
   message: string;
 }
 
+export interface DeleteEventState {
+  status: "idle" | "error";
+  message: string;
+}
+
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
 
 function readOptionalString(formData: FormData, key: string): string | null {
@@ -205,6 +210,9 @@ export async function createEvent(
   }
 
   revalidatePath("/admin/events");
+  // The public homepage reads published, upcoming events (see
+  // app/page.tsx) — same convention as updateHero/updateAbout.
+  revalidatePath("/");
   redirect("/admin/events");
 }
 
@@ -281,6 +289,7 @@ export async function updateEvent(
 
   revalidatePath("/admin/events");
   revalidatePath(`/admin/events/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/events");
 }
 
@@ -306,6 +315,7 @@ export async function toggleEventPublished(id: string, nextIsPublished: boolean)
   });
 
   revalidatePath("/admin/events");
+  revalidatePath("/");
 }
 
 /** Flips `isFeatured`. Bound with `.bind(null, id, nextIsFeatured)`. No maximum-featured-count is enforced — plain boolean. */
@@ -322,4 +332,58 @@ export async function toggleEventFeatured(id: string, nextIsFeatured: boolean): 
   });
 
   revalidatePath("/admin/events");
+  revalidatePath("/");
+}
+
+/**
+ * Deletes an Event only when no GalleryAlbum references it —
+ * GalleryAlbum.eventId has no cascade behavior, so deleting a referenced
+ * Event would either fail at the database level or orphan the album's
+ * event link. Deactivating isn't an option for Event (no such field), so
+ * the admin is asked to unlink it from those albums first. Never touches
+ * the category or featured image Media — deleting the Event row is all
+ * that's needed; those are the "one" side of their relations and simply
+ * stop being referenced.
+ */
+export async function deleteEvent(
+  _prevState: DeleteEventState,
+  formData: FormData
+): Promise<DeleteEventState> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return { status: "error", message: "You must be signed in to manage events." };
+  }
+
+  const id = readOptionalString(formData, "id");
+  if (!id) {
+    return { status: "error", message: "Missing event id." };
+  }
+
+  const existing = await prisma.event.findUnique({ where: { id } });
+  if (!existing) {
+    return { status: "error", message: "This event no longer exists. Please reload the page." };
+  }
+
+  const galleryAlbumCount = await prisma.galleryAlbum.count({ where: { eventId: id } });
+  if (galleryAlbumCount > 0) {
+    return {
+      status: "error",
+      message: `This event is linked to ${galleryAlbumCount} gallery album${galleryAlbumCount === 1 ? "" : "s"} and can't be deleted. Unlink it from those albums first.`,
+    };
+  }
+
+  try {
+    await prisma.event.delete({ where: { id } });
+  } catch (error) {
+    console.error("Failed to delete event:", error);
+    return { status: "error", message: "Something went wrong while deleting. Please try again." };
+  }
+
+  revalidatePath("/admin/events");
+  revalidatePath("/");
+
+  // The row disappears from the revalidated list on success — nothing left
+  // on the page to attach a success message to.
+  return { status: "idle", message: "" };
 }

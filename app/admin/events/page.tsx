@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getEvents } from "@/lib/events/events";
 import { toggleEventPublished, toggleEventFeatured } from "@/app/admin/events/action";
+import { DeleteEventButton } from "@/components/admin/DeleteEventButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,8 @@ export default async function EventsPage() {
                             {event.isFeatured ? "Unfeature" : "Feature"}
                           </Button>
                         </form>
+
+                        <DeleteEventButton id={event.id} title={event.title} />
                       </div>
                     </td>
                   </tr>

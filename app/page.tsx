@@ -17,7 +17,17 @@ import { getCurrentHero } from "@/lib/hero/hero";
 import { getCurrentAbout } from "@/lib/about/about";
 import { getHijriOverrideForDate } from "@/lib/hijri/hijri-overrides";
 import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
+import { getUpcomingEvents } from "@/lib/events/events";
+import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
 import { parseDateOnly } from "@/lib/date";
+import type { BadgeProps } from "@/components/ui/Badge";
+
+// EventCategory has no field that maps onto Badge's fixed tone enum
+// (its own `color` is a freeform hex string) — so the landing page's
+// existing 3-tone rotation is reapplied by position instead, exactly as
+// About.tsx already does for Tagline icons: the CMS manages the content,
+// the landing page manages the visual identity.
+const EVENT_CATEGORY_TONES: NonNullable<BadgeProps["tone"]>[] = ["primary", "accent", "secondary"];
 
 // Same Asia/Jakarta convention already hardcoded in Hero.tsx's own
 // getTodayGregorianDate and in usePrayerCountdown — reused here (not a new
@@ -38,10 +48,11 @@ function getTodayDateKeyInJakarta(): string {
 export default async function Home() {
   const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
 
-  const [hero, about, hijriOverride] = await Promise.all([
+  const [hero, about, hijriOverride, upcomingEvents] = await Promise.all([
     getCurrentHero(),
     getCurrentAbout(),
     todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
+    getUpcomingEvents(),
   ]);
 
   return (
@@ -95,7 +106,30 @@ export default async function Home() {
             description: tagline.description,
           }))}
         />
-        <Events />
+        <Events
+          // Only plain strings cross into the Client Component — never the
+          // Event/EventCategory/Media records themselves. Omitted
+          // (undefined, when there are no upcoming published events) falls
+          // back to Events' own existing hardcoded defaults, unchanged.
+          events={
+            upcomingEvents.length > 0
+              ? upcomingEvents.map((event, index) => ({
+                  title: event.title,
+                  category: event.category.name,
+                  categoryTone: EVENT_CATEGORY_TONES[index % EVENT_CATEGORY_TONES.length],
+                  date: formatEventDate(event.startDate),
+                  time: formatEventTime(event.startTime),
+                  location: event.location,
+                  // No dedicated event photo -> omitted, so EventCard renders
+                  // its own neutral placeholder instead of borrowing Hero's
+                  // unrelated photograph.
+                  imageSrc: event.featuredImage?.storagePath,
+                  imageAlt: event.featuredImage?.altText ?? undefined,
+                  href: `/kegiatan/${event.slug}`,
+                }))
+              : undefined
+          }
+        />
         <Financial />
         <Infaq />
         <Gallery />
