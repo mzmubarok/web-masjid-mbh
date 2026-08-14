@@ -20,6 +20,7 @@ import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
 import { getFeaturedGalleryAlbums } from "@/lib/gallery/gallery-albums";
+import { getFeaturedDonationProgram } from "@/lib/donations/donation-programs";
 import { getContactLocation } from "@/lib/contact/contact-location";
 import { toWhatsAppHref } from "@/lib/contact/format-contact";
 import { getActiveSocialMediaLinks } from "@/lib/social-media/social-media";
@@ -53,17 +54,27 @@ function getTodayDateKeyInJakarta(): string {
 export default async function Home() {
   const todayJakarta = parseDateOnly(getTodayDateKeyInJakarta());
 
-  const [hero, about, hijriOverride, upcomingEvents, galleryAlbums, contactLocation, socialLinks, siteSettings] =
-    await Promise.all([
-      getCurrentHero(),
-      getCurrentAbout(),
-      todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
-      getUpcomingEvents(),
-      getFeaturedGalleryAlbums(),
-      getContactLocation(),
-      getActiveSocialMediaLinks(),
-      getSiteSettings(),
-    ]);
+  const [
+    hero,
+    about,
+    hijriOverride,
+    upcomingEvents,
+    galleryAlbums,
+    featuredDonationProgram,
+    contactLocation,
+    socialLinks,
+    siteSettings,
+  ] = await Promise.all([
+    getCurrentHero(),
+    getCurrentAbout(),
+    todayJakarta ? getHijriOverrideForDate(todayJakarta) : null,
+    getUpcomingEvents(),
+    getFeaturedGalleryAlbums(),
+    getFeaturedDonationProgram(),
+    getContactLocation(),
+    getActiveSocialMediaLinks(),
+    getSiteSettings(),
+  ]);
 
   return (
     <PageWrapper>
@@ -141,7 +152,16 @@ export default async function Home() {
           }
         />
         <Financial />
-        <Infaq />
+        <Infaq
+          // Only plain strings cross into the Client Component — never the
+          // DonationProgram/Media record itself. Omitted (undefined, when no
+          // donation program is published) falls back to Infaq's own
+          // existing hardcoded defaults, unchanged. `eyebrow`, `trustIndicators`,
+          // and both CTAs have no matching DonationProgram field/reachable
+          // route — left untouched (see report's Architectural Findings).
+          title={featuredDonationProgram?.name ?? undefined}
+          subtitle={featuredDonationProgram?.shortDescription ?? undefined}
+        />
         <Gallery
           // Only plain strings cross into the Client Component — never the
           // GalleryAlbum/Media records themselves. Omitted (undefined, when

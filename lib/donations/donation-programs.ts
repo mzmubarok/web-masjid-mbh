@@ -11,3 +11,16 @@ export async function getDonationPrograms() {
 export async function getDonationProgramById(id: string) {
   return prisma.donationProgram.findUnique({ where: { id } });
 }
+
+/**
+ * The single published donation program to feature on the public homepage's
+ * Infaq banner — `isFeatured` preferred, then the same displayOrder/name
+ * ordering `getDonationPrograms` already uses. `null` when no program is
+ * published yet.
+ */
+export async function getFeaturedDonationProgram() {
+  return prisma.donationProgram.findFirst({
+    where: { isPublished: true },
+    orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }, { name: "asc" }],
+  });
+}

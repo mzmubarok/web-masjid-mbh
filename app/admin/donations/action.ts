@@ -151,6 +151,9 @@ export async function createDonationProgram(
   }
 
   revalidatePath("/admin/donations");
+  // The public homepage's Infaq banner reads the featured donation program
+  // (see app/page.tsx) — same convention as updateHero/updateAbout/createEvent.
+  revalidatePath("/");
   redirect("/admin/donations");
 }
 
@@ -226,6 +229,7 @@ export async function updateDonationProgram(
 
   revalidatePath("/admin/donations");
   revalidatePath(`/admin/donations/${id}/edit`);
+  revalidatePath("/");
   redirect("/admin/donations");
 }
 
@@ -251,6 +255,7 @@ export async function toggleDonationProgramPublished(id: string, nextIsPublished
   });
 
   revalidatePath("/admin/donations");
+  revalidatePath("/");
 }
 
 /** Flips `isFeatured`. Bound with `.bind(null, id, nextIsFeatured)`. No maximum-featured-count is enforced — plain boolean. */
@@ -267,6 +272,7 @@ export async function toggleDonationProgramFeatured(id: string, nextIsFeatured: 
   });
 
   revalidatePath("/admin/donations");
+  revalidatePath("/");
 }
 
 /** Deletes a DonationProgram. Never touches its cover Media — there are no other records that reference a DonationProgram. */
@@ -298,6 +304,7 @@ export async function deleteDonationProgram(
   }
 
   revalidatePath("/admin/donations");
+  revalidatePath("/");
 
   // The row disappears from the revalidated list on success — nothing left
   // on the page to attach a success message to.
