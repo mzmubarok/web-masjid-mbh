@@ -15,7 +15,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Masjid",
+  title: "Masjid Baitul Hikmah Gondolayu Lor",
   description: "A premium modern mosque website.",
 };
 
