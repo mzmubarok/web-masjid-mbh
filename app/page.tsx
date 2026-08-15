@@ -236,7 +236,7 @@ export default async function Home() {
                   name: program.name,
                   description: program.description ?? undefined,
                   tone: FINANCIAL_FUND_TONES[index % FINANCIAL_FUND_TONES.length],
-                  primaryStat: { label: "Total Dana", value: formatFinancialAmount(report.totalFund) },
+                  primaryStat: { label: "Saldo Bulan Lalu", value: formatFinancialAmount(report.totalFund) },
                   secondaryStats: [
                     { label: "Pemasukan Bulan Ini", value: formatFinancialAmount(report.monthlyIncome) },
                     { label: "Pengeluaran Bulan Ini", value: formatFinancialAmount(report.monthlyExpense) },

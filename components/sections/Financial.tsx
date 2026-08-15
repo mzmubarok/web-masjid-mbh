@@ -44,7 +44,7 @@ const DEFAULT_FUNDS: FinancialFund[] = [
     name: "Infaq Operasional",
     description: "Menopang kebutuhan operasional masjid sehari-hari.",
     tone: "primary",
-    primaryStat: { label: "Total Saldo", value: "Rp 45.200.000" },
+    primaryStat: { label: "Saldo Bulan Lalu", value: "Rp 45.200.000" },
     secondaryStats: [
       { label: "Pemasukan Bulan Ini", value: "Rp 12.500.000" },
       { label: "Pengeluaran Bulan Ini", value: "Rp 8.750.000" },
@@ -55,7 +55,7 @@ const DEFAULT_FUNDS: FinancialFund[] = [
     name: "Infaq Pembangunan Masjid",
     description: "Dikhususkan untuk pembangunan dan renovasi masjid.",
     tone: "secondary",
-    primaryStat: { label: "Total Dana", value: "Rp 310.000.000" },
+    primaryStat: { label: "Saldo Bulan Lalu", value: "Rp 310.000.000" },
     secondaryStats: [
       { label: "Pemasukan Bulan Ini", value: "Rp 25.000.000" },
       { label: "Pengeluaran Bulan Ini", value: "Rp 40.000.000" },
@@ -66,7 +66,7 @@ const DEFAULT_FUNDS: FinancialFund[] = [
     name: "S3 — Sehari Seribu Saja",
     description: "Mendukung kegiatan Ramadan, terutama penyediaan takjil harian.",
     tone: "accent",
-    primaryStat: { label: "Total Dana", value: "Rp 18.600.000" },
+    primaryStat: { label: "Saldo Bulan Lalu", value: "Rp 18.600.000" },
     secondaryStats: [
       { label: "Pemasukan Bulan Ini", value: "Rp 4.200.000" },
       { label: "Pengeluaran Bulan Ini", value: "Rp 3.100.000" },
