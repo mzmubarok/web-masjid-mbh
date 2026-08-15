@@ -19,6 +19,8 @@ import { getHijriOverrideForDate } from "@/lib/hijri/hijri-overrides";
 import { formatHijriDate } from "@/lib/hijri/format-hijri-date";
 import { getPrayerSettings } from "@/lib/prayer/prayer-settings";
 import { calculatePrayerTimes } from "@/lib/prayer/calculate-prayer-times";
+import { applyPrayerIhtiyath } from "@/lib/prayer/apply-prayer-ihtiyath";
+import { ceilPrayerTimesToMinute } from "@/lib/prayer/ceil-prayer-times";
 import { formatPrayerSchedule } from "@/lib/prayer/format-prayer-schedule";
 import { getUpcomingEvents } from "@/lib/events/events";
 import { formatEventDate, formatEventTime } from "@/lib/events/format-event";
@@ -117,10 +119,16 @@ export default async function Home() {
   // Reuses todayJakarta (already computed above for the Hijri override
   // lookup) as the calculation date — no second "what day is it" source.
   // Omitted (undefined) when no PrayerSetting row exists yet, falling back
-  // to Hero's own hardcoded DEFAULT_SCHEDULE, unchanged.
+  // to Hero's own hardcoded DEFAULT_SCHEDULE, unchanged. Every value
+  // reaching Hero is already final — Ihtiyath and ceiling-minute rounding
+  // both happen here, backend-side, before formatting; Hero and the
+  // countdown it drives only ever display these strings, never adjust them.
   const todaySchedule =
     prayerSettings && todayJakarta
-      ? formatPrayerSchedule(calculatePrayerTimes(prayerSettings, todayJakarta), prayerSettings.timezone)
+      ? formatPrayerSchedule(
+          ceilPrayerTimesToMinute(applyPrayerIhtiyath(calculatePrayerTimes(prayerSettings, todayJakarta), prayerSettings)),
+          prayerSettings.timezone
+        )
       : undefined;
 
   return (

@@ -449,6 +449,18 @@ model PrayerSetting {
   // "CUSTOM" uses exactly what's configured in those fields instead.
   calculationMode String @default("LFNU")
 
+  // Ihtiyath — extra safety minutes added to each prayer's astronomically
+  // calculated time (see lib/prayer/apply-prayer-ihtiyath.ts). Purely an
+  // operational adjustment applied after calculation: independent of
+  // calculationMode/fajrAngle/ishaAngle/madhab above, editable in both
+  // LFNU and Custom mode, and never fed back into the calculation itself.
+  fajrIhtiyath    Int @default(0)
+  sunriseIhtiyath Int @default(0)
+  dhuhrIhtiyath   Int @default(0)
+  asrIhtiyath     Int @default(0)
+  maghribIhtiyath Int @default(0)
+  ishaIhtiyath    Int @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

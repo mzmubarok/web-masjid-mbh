@@ -1,4 +1,4 @@
-import { CalculationParameters, Madhab } from "adhan";
+import { CalculationParameters, Madhab, Rounding } from "adhan";
 import type { PrayerSetting } from "@/lib/generated/prisma/client";
 
 /**
@@ -27,6 +27,16 @@ const MADHAB_BY_LABEL: Record<string, (typeof Madhab)[keyof typeof Madhab]> = {
  * `method` is passed as `null` — every mode here is driven by an explicit
  * Fajr/Isha angle pair, never one of adhan's named CalculationMethod
  * presets (none of which correspond to the LFNU standard anyway).
+ *
+ * `rounding` is set to `Rounding.None` deliberately — adhan's own default
+ * (`Rounding.Nearest`) rounds every prayer time to the nearest whole minute
+ * *inside* the astronomical calculation itself, before this project's own
+ * pipeline ever sees the result, which left `ceilPrayerTimesToMinute`
+ * (lib/prayer/ceil-prayer-times.ts) with nothing to round. `None` makes
+ * adhan hand back the raw, unrounded seconds instead — `Rounding.Up` is
+ * deliberately NOT used here, since ceiling to the next minute must stay
+ * `ceilPrayerTimesToMinute`'s own job, applied *after* Ihtiyath
+ * (lib/prayer/apply-prayer-ihtiyath.ts), not adhan's.
  */
 export function buildCalculationParameters(setting: PrayerSetting): CalculationParameters {
   const isLfnu = setting.calculationMode === "LFNU";
@@ -37,5 +47,6 @@ export function buildCalculationParameters(setting: PrayerSetting): CalculationP
 
   const parameters = new CalculationParameters(null, fajrAngle, ishaAngle);
   parameters.madhab = MADHAB_BY_LABEL[madhabLabel] ?? Madhab.Shafi;
+  parameters.rounding = Rounding.None;
   return parameters;
 }

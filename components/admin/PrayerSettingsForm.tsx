@@ -78,6 +78,17 @@ const CALCULATION_METHODS = [
 // As documented in the same file ("madhab | Enum | Yes | Shafi / Hanafi").
 const MADHABS = ["Shafi", "Hanafi"] as const;
 
+// Names match format-prayer-schedule.ts's own PRAYER_LABELS — the same
+// Indonesian prayer names shown on the homepage schedule these adjust.
+const IHTIYATH_INPUTS = [
+  { key: "fajrIhtiyath", label: "Subuh" },
+  { key: "sunriseIhtiyath", label: "Terbit" },
+  { key: "dhuhrIhtiyath", label: "Zuhur" },
+  { key: "asrIhtiyath", label: "Asar" },
+  { key: "maghribIhtiyath", label: "Maghrib" },
+  { key: "ishaIhtiyath", label: "Isya" },
+] as const;
+
 const initialState: PrayerSettingsActionState = { status: "idle", message: "" };
 
 export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
@@ -254,6 +265,34 @@ export function PrayerSettingsForm({ settings }: PrayerSettingsFormProps) {
                 onChange={(event) => setIshaAngle(event.target.value)}
               />
             </Field>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Prayer Time Adjustment (Ihtiyath)</CardTitle>
+          <CardDescription>
+            Extra safety minutes added to each prayer&apos;s calculated time — independent of Calculation Mode
+            above, always editable in both LFNU and Custom.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {IHTIYATH_INPUTS.map(({ key, label }) => (
+              <Field key={key} label={label} htmlFor={key} required hint="0–15 minutes.">
+                <Input
+                  id={key}
+                  name={key}
+                  type="number"
+                  min={0}
+                  max={15}
+                  step={1}
+                  required
+                  defaultValue={settings?.[key] ?? 0}
+                />
+              </Field>
+            ))}
           </div>
         </CardContent>
       </Card>

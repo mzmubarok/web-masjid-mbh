@@ -26,6 +26,14 @@ export async function seedPrayerSetting(prisma: PrismaClient) {
       isAutomatic: true,
       fajrAngle: LFNU_PARAMETERS.fajrAngle,
       ishaAngle: LFNU_PARAMETERS.ishaAngle,
+      // No adjustment out of the box — an admin dials these in per prayer
+      // from the CMS; the schema itself already defaults every one to 0.
+      fajrIhtiyath: 0,
+      sunriseIhtiyath: 0,
+      dhuhrIhtiyath: 0,
+      asrIhtiyath: 0,
+      maghribIhtiyath: 0,
+      ishaIhtiyath: 0,
     },
   });
 

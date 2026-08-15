@@ -1,4 +1,4 @@
-import type { PrayerTimes } from "adhan";
+import type { PrayerTimesRecord } from "@/lib/prayer/apply-prayer-ihtiyath";
 import type { PrayerScheduleItem } from "@/components/features/prayer/PrayerScheduleCard";
 
 type PrayerTimeKey = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
@@ -24,13 +24,14 @@ function formatTime(date: Date, timezone: string): string {
 }
 
 /**
- * Maps adhan's calculated `PrayerTimes` into the exact `PrayerScheduleItem[]`
- * shape Hero already expects. `icon` is intentionally omitted — icons are
- * never CMS/calculation-driven, they're resolved by name inside Hero itself
- * (see `PRAYER_ICON_BY_NAME`) — so this stays pure data formatting with no
- * presentation concerns.
+ * Maps the final (Ihtiyath-applied, ceiling-rounded) `PrayerTimesRecord`
+ * into the exact `PrayerScheduleItem[]` shape Hero already expects. `icon`
+ * is intentionally omitted — icons are never CMS/calculation-driven,
+ * they're resolved by name inside Hero itself (see `PRAYER_ICON_BY_NAME`)
+ * — so this stays pure data formatting with no presentation or calculation
+ * concerns of its own; every value it receives is already final.
  */
-export function formatPrayerSchedule(prayerTimes: PrayerTimes, timezone: string): PrayerScheduleItem[] {
+export function formatPrayerSchedule(prayerTimes: PrayerTimesRecord, timezone: string): PrayerScheduleItem[] {
   return PRAYER_LABELS.map(({ key, name }) => ({
     name,
     time: formatTime(prayerTimes[key], timezone),

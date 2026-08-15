@@ -48,7 +48,52 @@ function parseOptionalDecimalField(formData: FormData, key: string, label: strin
   return text;
 }
 
-interface ParsedPrayerSettingsInput {
+// Independent of calculationMode — see the schema's own comment on these
+// columns. Indonesian names match this project's established prayer-name
+// convention (format-prayer-schedule.ts's PRAYER_LABELS).
+const IHTIYATH_FIELDS = [
+  { key: "fajrIhtiyath", label: "Subuh Ihtiyath" },
+  { key: "sunriseIhtiyath", label: "Terbit Ihtiyath" },
+  { key: "dhuhrIhtiyath", label: "Zuhur Ihtiyath" },
+  { key: "asrIhtiyath", label: "Asar Ihtiyath" },
+  { key: "maghribIhtiyath", label: "Maghrib Ihtiyath" },
+  { key: "ishaIhtiyath", label: "Isya Ihtiyath" },
+] as const;
+
+type ParsedIhtiyath = Record<(typeof IHTIYATH_FIELDS)[number]["key"], number>;
+
+/** Integer, 0–15 minutes — matches the column's own constraints. */
+function parseIhtiyathField(formData: FormData, key: string, label: string): number | { error: string } {
+  const text = readOptionalString(formData, key);
+  if (!text) {
+    return { error: `Please fill in the following required field: ${label}.` };
+  }
+
+  const value = Number(text);
+  if (!Number.isInteger(value)) {
+    return { error: `${label} must be a whole number of minutes.` };
+  }
+  if (value < 0 || value > 15) {
+    return { error: `${label} must be between 0 and 15 minutes.` };
+  }
+
+  return value;
+}
+
+/** All six Ihtiyath fields at once — parsed the same way regardless of calculationMode, since Ihtiyath is independent of it. */
+function parseIhtiyathFields(formData: FormData): ParsedIhtiyath | { error: string } {
+  const result = {} as ParsedIhtiyath;
+  for (const { key, label } of IHTIYATH_FIELDS) {
+    const parsed = parseIhtiyathField(formData, key, label);
+    if (typeof parsed !== "number") {
+      return parsed;
+    }
+    result[key] = parsed;
+  }
+  return result;
+}
+
+interface ParsedPrayerSettingsInput extends ParsedIhtiyath {
   mosqueName: string;
   latitude: string;
   longitude: string;
@@ -100,6 +145,13 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
   // tampered field fails safe into the standard mode, not an unvalidated one.
   const calculationMode: "LFNU" | "CUSTOM" = formData.get("calculationMode") === "CUSTOM" ? "CUSTOM" : "LFNU";
 
+  // Parsed once, outside the mode branch below — Ihtiyath is completely
+  // independent of calculationMode, editable and required in both.
+  const ihtiyath = parseIhtiyathFields(formData);
+  if ("error" in ihtiyath) {
+    return ihtiyath;
+  }
+
   // LFNU mode always uses LFNU_PARAMETERS (see lib/prayer/prayer-parameters.ts)
   // — its Fajr Angle/Isha Angle/Madhab inputs are disabled in the form and
   // never submitted, so they're never required or read here for this mode.
@@ -115,6 +167,7 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
       isAutomatic: formData.get("isAutomatic") !== null,
       fajrAngle: String(LFNU_PARAMETERS.fajrAngle),
       ishaAngle: String(LFNU_PARAMETERS.ishaAngle),
+      ...ihtiyath,
     };
   }
 
@@ -144,6 +197,7 @@ function parsePrayerSettingsForm(formData: FormData): ParsedPrayerSettingsInput 
     isAutomatic: formData.get("isAutomatic") !== null,
     fajrAngle,
     ishaAngle,
+    ...ihtiyath,
   };
 }
 
@@ -178,6 +232,12 @@ export async function updatePrayerSettings(
     isAutomatic: parsed.isAutomatic,
     fajrAngle: parsed.fajrAngle,
     ishaAngle: parsed.ishaAngle,
+    fajrIhtiyath: parsed.fajrIhtiyath,
+    sunriseIhtiyath: parsed.sunriseIhtiyath,
+    dhuhrIhtiyath: parsed.dhuhrIhtiyath,
+    asrIhtiyath: parsed.asrIhtiyath,
+    maghribIhtiyath: parsed.maghribIhtiyath,
+    ishaIhtiyath: parsed.ishaIhtiyath,
   };
 
   try {
