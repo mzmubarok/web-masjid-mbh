@@ -135,7 +135,7 @@ export default async function Home() {
     <PageWrapper>
       <AnnouncementBar
         icon={<Megaphone />}
-        message="Jadwal sholat Jumat berubah menjadi pukul 12.00 WIB mulai minggu ini."
+        message="Halaman masih dalam tahap pengembangan dan belum sempurna. Beberapa fitur akan hadir di waktu yang akan datang"
         cta={{ label: "Selengkapnya", href: "#" }}
       />
       <Navbar transparent />
